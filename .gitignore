@@ -1,0 +1,39 @@
+# Kiro specs and settings
+.kiro/
+
+# GNOME Extension compiled schemas
+schemas/gschemas.compiled
+
+# Node modules (if using any build tools)
+node_modules/
+package-lock.json
+
+# Python cache (for any helper scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+*.zip
+dist/
+
+# Test cache
+.cache/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.tmp/

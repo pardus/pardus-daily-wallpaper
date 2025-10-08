@@ -1,0 +1,8 @@
+{
+  "name": "Pardus Live Wallpaper",
+  "description": "Automatically download and shuffle wallpapers from various sources",
+  "uuid": "pardus-wallpaper-extension@pardus.org.tr",
+  "shell-version": [
+    "48"
+  ]
+}
