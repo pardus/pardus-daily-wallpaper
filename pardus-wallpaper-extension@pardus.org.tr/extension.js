@@ -2,7 +2,7 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -13,44 +13,124 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import GObject from 'gi://GObject';
-import St from 'gi://St';
-
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const Indicator = GObject.registerClass(
-class Indicator extends PanelMenu.Button {
-    _init() {
-        super._init(0.0, _('My Shiny Indicator'));
+import { SettingsManager } from './settings.js';
+import { WallpaperManager } from './wallpaperManager.js';
+import { BackgroundWorker } from './worker.js';
+import { WallpaperIndicator } from './indicator.js';
 
-        this.add_child(new St.Icon({
-            icon_name: 'face-smile-symbolic',
-            style_class: 'system-status-icon',
-        }));
-
-        let item = new PopupMenu.PopupMenuItem(_('Show Notification'));
-        item.connect('activate', () => {
-            Main.notify(_('Whatʼs up, folks?'));
-        });
-        this.menu.addMenuItem(item);
-    }
-});
-
-export default class IndicatorExampleExtension extends Extension {
+export default class PardusWallpaperExtension extends Extension {
     enable() {
-        this._indicator = new Indicator();
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        console.log('Enabling Pardus Wallpaper Extension');
+        
+        try {
+            // Initialize settings manager
+            this._settings = new SettingsManager(this);
+            
+            // Initialize wallpaper manager
+            this._wallpaperManager = new WallpaperManager(this._settings);
+            
+            // Create and add indicator to panel
+            this._indicator = new WallpaperIndicator(
+                this._settings,
+                this._wallpaperManager,
+                this.path
+            );
+            Main.panel.addToStatusArea(this.uuid, this._indicator);
+            
+            // Initialize background worker
+            this._worker = new BackgroundWorker(
+                this._settings,
+                this._wallpaperManager,
+                this._indicator
+            );
+            
+            // Set worker reference in indicator for retry functionality
+            this._indicator.setWorker(this._worker);
+            
+            this._worker.start();
+            
+            // Setup settings change listeners
+            this._setupSettingsListeners();
+            
+            console.log('Pardus Wallpaper Extension enabled successfully');
+        } catch (e) {
+            console.error('Failed to enable Pardus Wallpaper Extension:', e);
+        }
     }
 
     disable() {
-        this._indicator.destroy();
-        this._indicator = null;
+        console.log('Disabling Pardus Wallpaper Extension');
+        
+        try {
+            // Disconnect settings listeners
+            if (this._signalIds) {
+                this._signalIds.forEach(id => {
+                    if (id) {
+                        this._settings.disconnect(id);
+                    }
+                });
+                this._signalIds = [];
+            }
+            
+            // Stop background worker
+            if (this._worker) {
+                this._worker.stop();
+                this._worker = null;
+            }
+            
+            // Remove indicator
+            if (this._indicator) {
+                this._indicator.destroy();
+                this._indicator = null;
+            }
+            
+            // Cleanup
+            this._wallpaperManager = null;
+            this._settings = null;
+            
+            console.log('Pardus Wallpaper Extension disabled successfully');
+        } catch (e) {
+            console.error('Error disabling Pardus Wallpaper Extension:', e);
+        }
+    }
+
+    /**
+     * Setup settings change listeners for live updates
+     */
+    _setupSettingsListeners() {
+        this._signalIds = [];
+        
+        // Listen for enabled state changes
+        const enabledId = this._settings.connectChanged('enabled', () => {
+            console.log('Enabled setting changed');
+            if (this._worker) {
+                this._worker.restartShuffleTimer();
+            }
+        });
+        this._signalIds.push(enabledId);
+        
+        // Listen for shuffle interval changes
+        const intervalId = this._settings.connectChanged('shuffle-interval', () => {
+            console.log('Shuffle interval changed');
+            if (this._worker) {
+                this._worker.restartShuffleTimer();
+            }
+        });
+        this._signalIds.push(intervalId);
+        
+        // Listen for selected sources changes
+        const sourcesId = this._settings.connectChanged('selected-sources', () => {
+            console.log('Selected sources changed');
+            if (this._worker) {
+                this._worker.restartShuffleTimer();
+            }
+        });
+        this._signalIds.push(sourcesId);
     }
 }

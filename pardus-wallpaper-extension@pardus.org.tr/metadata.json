@@ -4,5 +4,8 @@
   "uuid": "pardus-wallpaper-extension@pardus.org.tr",
   "shell-version": [
     "48"
-  ]
+  ],
+  "version": 1,
+  "url": "https://github.com/pardus/pardus-live-wallpaper",
+  "settings-schema": "org.gnome.shell.extensions.pardus-wallpaper"
 }

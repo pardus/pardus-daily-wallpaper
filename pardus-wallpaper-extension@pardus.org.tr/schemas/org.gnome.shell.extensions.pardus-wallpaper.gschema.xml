@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.pardus-wallpaper" path="/org/gnome/shell/extensions/pardus-wallpaper/">
+    
+    <!-- Enable/Disable live wallpaper feature -->
+    <key name="enabled" type="b">
+      <default>true</default>
+      <summary>Enable live wallpapers</summary>
+      <description>Enable or disable automatic wallpaper downloading and shuffling</description>
+    </key>
+    
+    <!-- Selected wallpaper sources (JSON array of source IDs) -->
+    <key name="selected-sources" type="as">
+      <default>['bing', 'reddit']</default>
+      <summary>Selected wallpaper sources</summary>
+      <description>List of enabled wallpaper source IDs</description>
+    </key>
+    
+    <!-- Shuffle interval in minutes -->
+    <key name="shuffle-interval" type="i">
+      <default>5</default>
+      <range min="1" max="1440"/>
+      <summary>Shuffle interval</summary>
+      <description>Time in minutes between automatic wallpaper changes</description>
+    </key>
+    
+    <!-- Current source index for rotation -->
+    <key name="current-source-index" type="i">
+      <default>0</default>
+      <summary>Current source index</summary>
+      <description>Index of the current wallpaper source in rotation</description>
+    </key>
+    
+    <!-- Last check date (YYYY-MM-DD format) -->
+    <key name="last-check-date" type="s">
+      <default>''</default>
+      <summary>Last wallpaper check date</summary>
+      <description>Date when wallpapers were last downloaded (YYYY-MM-DD)</description>
+    </key>
+    
+    <!-- Keep images in cache -->
+    <key name="keep-cache" type="b">
+      <default>true</default>
+      <summary>Keep downloaded images in cache</summary>
+      <description>If disabled, only today's images are kept</description>
+    </key>
+    
+    <!-- Auto download daily -->
+    <key name="auto-download-daily" type="b">
+      <default>true</default>
+      <summary>Auto download daily</summary>
+      <description>Automatically download wallpapers each day</description>
+    </key>
+    
+    <!-- Cache retention days -->
+    <key name="cache-retention-days" type="i">
+      <default>7</default>
+      <range min="1" max="30"/>
+      <summary>Cache retention days</summary>
+      <description>Number of days to keep wallpapers in cache</description>
+    </key>
+    
+  </schema>
+</schemalist>

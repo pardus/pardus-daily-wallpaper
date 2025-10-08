@@ -1,1 +1,171 @@
-/* Add your custom extension styling here */
+/* stylesheet.css
+ *
+ * Custom styles for the Pardus Wallpaper Extension
+ */
+
+/* Popup menu container */
+.wallpaper-popup-menu {
+    min-width: 400px;
+    max-width: 500px;
+}
+
+.wallpaper-popup-menu .popup-menu-content {
+    padding: 8px;
+}
+
+/* Source row styling */
+.wallpaper-source-row {
+    spacing: 12px;
+    padding: 8px 12px;
+}
+
+.wallpaper-source-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.wallpaper-source-thumbnail {
+    margin-right: 8px;
+}
+
+.wallpaper-source-name {
+    font-weight: 500;
+}
+
+.wallpaper-source-status {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.wallpaper-source-button {
+    padding: 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+.wallpaper-source-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.wallpaper-source-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Panel indicator spinner animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.system-status-icon.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Info Dialog styling */
+.wallpaper-info-dialog {
+    min-width: 600px;
+    max-width: 800px;
+}
+
+.wallpaper-info-content {
+    spacing: 16px;
+    padding: 16px;
+}
+
+.wallpaper-preview-large {
+    border-radius: 8px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.wallpaper-preview-large StBin {
+    border-radius: 8px;
+}
+
+.wallpaper-metadata {
+    spacing: 8px;
+    padding: 12px;
+}
+
+.wallpaper-title {
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+.wallpaper-info {
+    font-size: 11pt;
+    color: #999;
+}
+
+.wallpaper-description {
+    font-size: 10pt;
+    color: #ccc;
+    padding-top: 8px;
+}
+
+.wallpaper-copyright {
+    font-size: 9pt;
+    color: #888;
+    font-style: italic;
+    padding-top: 4px;
+}
+
+.wallpaper-no-data {
+    font-size: 12pt;
+    color: #999;
+    padding: 32px;
+}
+
+/* Loading indicator */
+.wallpaper-loading {
+    padding: 32px;
+    spacing: 12px;
+}
+
+.wallpaper-loading-text {
+    color: #999;
+}
+
+/* Empty state */
+.wallpaper-empty-state {
+    padding: 32px;
+    spacing: 12px;
+}
+
+.wallpaper-empty-state-icon {
+    icon-size: 48px;
+    color: #666;
+}
+
+.wallpaper-empty-state-text {
+    color: #999;
+}
+
+/* Separator */
+.wallpaper-separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 8px 0;
+}
+
+/* Status indicators */
+.wallpaper-status-success {
+    color: #4caf50;
+}
+
+.wallpaper-status-error {
+    color: #f44336;
+}
+
+.wallpaper-status-downloading {
+    color: #2196f3;
+}
+
+/* Hover effects */
+.wallpaper-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.wallpaper-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
