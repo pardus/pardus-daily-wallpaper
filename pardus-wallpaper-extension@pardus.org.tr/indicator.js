@@ -5,367 +5,166 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import { WallpaperInfoDialog } from './infoDialog.js';
 
-export const WallpaperIndicator = GObject.registerClass(
-    class WallpaperIndicator extends PanelMenu.Button {
-        _init(settings, wallpaperManager, extensionPath) {
-            super._init(0.0, 'Pardus Live Wallpaper');
-
+export const Indicator = GObject.registerClass({
+    Signals: {
+        'set-wallpaper-for-source': { param_types: [GObject.TYPE_STRING] },
+    },
+}, class Indicator extends PanelMenu.Button {
+    _init(settings) {
+        super._init(0.0, _('Pardus Wallpaper Extension'));
             this._settings = settings;
-            this._wallpaperManager = wallpaperManager;
-            this._extensionPath = extensionPath;
-            this._signalIds = [];
-            this._isDownloading = false;
-            this._downloadStates = {}; // Track per-source download status
-            this._sourceRows = {}; // Store source row widgets
+        this.path = Extension.lookupByURL(import.meta.url).path;
 
-            // Create panel icon
+        this._sourceRows = {};
+
             this._icon = new St.Icon({
-                icon_name: 'preferences-desktop-wallpaper-symbolic',
+            gicon: Gio.icon_new_for_string(GLib.build_filenamev([this.path, 'data', 'icon.svg'])),
                 style_class: 'system-status-icon',
             });
             this.add_child(this._icon);
 
-            // Build popup menu
-            this._buildPopupMenu();
-
-            // Connect to settings changes
+        this._buildMenu();
             this._connectSettings();
         }
 
-        /**
-         * Set downloading state (show/hide spinner)
-         * @param {boolean} isDownloading - True if downloading
-         */
+    refresh() {
+        this.menu.removeAll();
+        this._buildMenu();
+    }
+
         setDownloadingState(isDownloading) {
-            this._isDownloading = isDownloading;
-
             if (isDownloading) {
-                this._icon.icon_name = 'content-loading-symbolic';
+            this._icon.add_style_class_name('spinning');
             } else {
-                this._icon.icon_name = 'preferences-desktop-wallpaper-symbolic';
+            this._icon.remove_style_class_name('spinning');
+        }
+    }
+
+    _buildMenu() {
+        const selectedSources = this._settings.get_strv('selected-sources');
+        const sources = this._loadWallpaperSources();
+
+        for (const sourceId of selectedSources) {
+            const sourceData = sources[sourceId];
+            if(sourceData) {
+                this._buildSourceRow(sourceId, sourceData);
             }
         }
 
-        /**
-         * Update source download status
-         * @param {string} sourceId - Source identifier
-         * @param {string} status - Status: 'pending', 'downloading', 'success', 'error'
-         */
-        updateSourceStatus(sourceId, status) {
-            this._downloadStates[sourceId] = status;
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._buildGeneralSection();
+    }
 
-            // Update UI if source row exists
-            if (this._sourceRows[sourceId]) {
-                this._updateSourceRowStatus(sourceId, status);
-            }
-        }
+    _buildSourceRow(sourceId, sourceData) {
+        const menuItem = new PopupMenu.PopupMenuItem(sourceData.name || sourceId);
+        this.menu.addMenuItem(menuItem);
 
-        _buildPopupMenu() {
-            // Enable/Disable toggle
-            this._enableToggle = new PopupMenu.PopupSwitchMenuItem(
-                'Live Wallpapers',
-                this._settings.isEnabled()
-            );
-            this._enableToggle.connect('toggled', (item) => {
-                this._settings.setEnabled(item.state);
-            });
-            this.menu.addMenuItem(this._enableToggle);
+        menuItem.connect('activate', () => {
+            this.emit('set-wallpaper-for-source', sourceId);
+        });
 
-            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const statusIcon = new St.Icon({
+            style_class: 'popup-menu-icon',
+        });
+        
+        const spacer = new St.Bin({ style_class: 'popup-menu-item-spacer', x_expand: true });
+        menuItem.add_child(spacer);
+        menuItem.add_child(statusIcon);
+        
+        this._sourceRows[sourceId] = { row: menuItem, statusIcon: statusIcon };
 
-            // Sources section
-            this._sourcesSection = new PopupMenu.PopupMenuSection();
-            const sourcesLabel = new PopupMenu.PopupMenuItem('Wallpaper Sources', {
-                reactive: false,
-                can_focus: false,
-            });
-            sourcesLabel.label.style = 'font-weight: bold;';
-            this._sourcesSection.addMenuItem(sourcesLabel);
+        const isCached = this._isSourceCached(sourceId);
+        this.updateSourceStatus(sourceId, isCached ? 'cached' : 'pending');
+    }
 
-            // Load sources
-            this._loadSources();
-
-            this.menu.addMenuItem(this._sourcesSection);
-            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-            // Cycle interval
-            const intervalLabel = new PopupMenu.PopupMenuItem('Update Frequency', {
-                reactive: false,
-                can_focus: false,
-            });
-            intervalLabel.label.style = 'font-weight: bold;';
-            this.menu.addMenuItem(intervalLabel);
-
-            const intervalItem = new PopupMenu.PopupMenuItem(
-                `Cycle Interval: ${this._settings.getShuffleInterval()} minutes`,
-                { reactive: false }
-            );
-            this.menu.addMenuItem(intervalItem);
-            this._intervalItem = intervalItem;
-        }
-
-        _loadSources() {
-            try {
-                const config = this._wallpaperManager.loadSourcesConfig();
-                if (!config) {
-                    return;
-                }
-
-                const selectedSources = this._settings.getSelectedSources();
-
-                for (const [sourceId, sourceInfo] of Object.entries(config)) {
-                    const isSelected = selectedSources.includes(sourceId);
-
-                    if (isSelected) {
-                        const sourceRow = this._buildSourceRow(sourceId, sourceInfo);
-                        this._sourcesSection.addMenuItem(sourceRow);
-                        this._sourceRows[sourceId] = sourceRow;
-                    }
-                }
+    _isSourceCached(sourceId) {
+        try {
+            const today = GLib.DateTime.new_now_local().format('%d.%m.%Y');
+            const cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', today]);
+            const metadataFile = Gio.File.new_for_path(GLib.build_filenamev([cacheDir, `${sourceId}.json`]));
+            return metadataFile.query_exists(null);
             } catch (e) {
-                console.error('Failed to load wallpaper sources:', e);
-            }
+            logError(e, `[Indicator] Failed to check cache for ${sourceId}`);
+            return false;
         }
+    }
 
-        /**
-         * Build a source row with thumbnail, name, status, and action buttons
-         * @param {string} sourceId - Source identifier
-         * @param {Object} sourceInfo - Source configuration
-         * @returns {PopupMenu.PopupBaseMenuItem} Source row widget
-         */
-        _buildSourceRow(sourceId, sourceInfo) {
-            const item = new PopupMenu.PopupBaseMenuItem({
-                reactive: true,
-                can_focus: true,
-            });
+    updateSourceStatus(sourceId, status) {
+        const sourceRow = this._sourceRows[sourceId];
+        if (!sourceRow) return;
 
-            // Container box
-            const box = new St.BoxLayout({
-                vertical: false,
-                style_class: 'wallpaper-source-row',
-                x_expand: true,
-            });
-
-            // Thumbnail (placeholder for now)
-            const thumbnail = new St.Icon({
-                icon_name: 'image-x-generic-symbolic',
-                icon_size: 48,
-                style_class: 'wallpaper-source-thumbnail',
-            });
-            box.add_child(thumbnail);
-
-            // Name label
-            const nameLabel = new St.Label({
-                text: sourceInfo.name || sourceId,
-                y_align: St.Align.MIDDLE,
-                x_expand: true,
-                style_class: 'wallpaper-source-name',
-            });
-            box.add_child(nameLabel);
-
-            // Status indicator
-            const statusIcon = new St.Icon({
-                icon_name: 'emblem-ok-symbolic',
-                icon_size: 16,
-                style_class: 'wallpaper-source-status',
-            });
-            box.add_child(statusIcon);
-
-            // Info button (magnifying glass)
-            const infoButton = new St.Button({
-                style_class: 'wallpaper-source-button',
-                child: new St.Icon({
-                    icon_name: 'zoom-in-symbolic',
-                    icon_size: 16,
-                }),
-            });
-            infoButton.connect('clicked', () => {
-                this._onInfoClicked(sourceId);
-            });
-            box.add_child(infoButton);
-
-            // Play button (set wallpaper)
-            const playButton = new St.Button({
-                style_class: 'wallpaper-source-button',
-                child: new St.Icon({
-                    icon_name: 'media-playback-start-symbolic',
-                    icon_size: 16,
-                }),
-            });
-            playButton.connect('clicked', () => {
-                this._onPlayClicked(sourceId);
-            });
-            box.add_child(playButton);
-
-            // Retry button (hidden by default, shown on error)
-            const retryButton = new St.Button({
-                style_class: 'wallpaper-source-button',
-                child: new St.Icon({
-                    icon_name: 'view-refresh-symbolic',
-                    icon_size: 16,
-                }),
-                visible: false,
-            });
-            retryButton.connect('clicked', () => {
-                this._onRetryClicked(sourceId);
-            });
-            box.add_child(retryButton);
-
-            item.add_child(box);
-
-            // Store references for status updates
-            item._statusIcon = statusIcon;
-            item._retryButton = retryButton;
-            item._sourceId = sourceId;
-
-            return item;
-        }
-
-        /**
-         * Update source row status indicator
-         * @param {string} sourceId - Source identifier
-         * @param {string} status - Status: 'downloading', 'success', 'error'
-         */
-        _updateSourceRowStatus(sourceId, status) {
-            const row = this._sourceRows[sourceId];
-            if (!row || !row._statusIcon) {
-                return;
-            }
-
-            const statusIcon = row._statusIcon;
+        let iconName = '';
+        let styleClass = 'popup-menu-icon'; // Base class
 
             switch (status) {
                 case 'downloading':
-                    statusIcon.icon_name = 'content-loading-symbolic';
-                    // Hide retry button if exists
-                    if (row._retryButton) {
-                        row._retryButton.visible = false;
-                    }
+                iconName = 'cloud-download-symbolic';
+                styleClass += ' spinning';
                     break;
                 case 'success':
-                    statusIcon.icon_name = 'emblem-ok-symbolic';
-                    // Hide retry button if exists
-                    if (row._retryButton) {
-                        row._retryButton.visible = false;
-                    }
+            case 'cached':
+                iconName = 'emblem-ok-symbolic';
+                styleClass += ' success-label'; // for color
                     break;
                 case 'error':
-                    statusIcon.icon_name = 'dialog-error-symbolic';
-                    // Show retry button
-                    if (row._retryButton) {
-                        row._retryButton.visible = true;
-                    }
+                iconName = 'dialog-error-symbolic';
+                styleClass += ' error-label'; // for color
                     break;
+            case 'pending':
                 default:
-                    statusIcon.icon_name = 'emblem-ok-symbolic';
+                iconName = 'document-open-recent-symbolic';
+                break;
+        }
+
+        sourceRow.statusIcon.icon_name = iconName;
+        sourceRow.statusIcon.style_class = styleClass;
+    }
+
+    _buildGeneralSection() {
+        const settingsItem = new PopupMenu.PopupMenuItem(_('Settings'));
+        settingsItem.connect('activate', () => this._openPreferences());
+        this.menu.addMenuItem(settingsItem);
+    }
+
+    _openPreferences() {
+        Extension.lookupByURL(import.meta.url).openPreferences();
+    }
+    
+    _loadWallpaperSources() {
+        try {
+            const sourcesPath = GLib.build_filenamev([this.path, 'data', 'wallpaper_sources.json']);
+            const file = Gio.File.new_for_path(sourcesPath);
+            const [ok, contents] = file.load_contents(null);
+
+            if (ok) {
+                const data = JSON.parse(new TextDecoder().decode(contents));
+                return data.sources || {};
             }
+        } catch(e) {
+             console.error(`[Indicator] Error loading wallpaper sources: ${e}`);
         }
+        return {};
+    }
 
-        /**
-         * Set worker reference for retry functionality
-         * @param {BackgroundWorker} worker - Background worker instance
-         */
-        setWorker(worker) {
-            this._worker = worker;
-        }
-
-        _connectSettings() {
-            const enabledId = this._settings.connectChanged('enabled', () => {
-                this._enableToggle.setToggleState(this._settings.isEnabled());
-            });
-            this._signalIds.push(enabledId);
-
-            const intervalId = this._settings.connectChanged('shuffle-interval', () => {
-                this._intervalItem.label.text =
-                    `Shuffle: ${this._settings.getShuffleInterval()} minutes`;
-            });
-            this._signalIds.push(intervalId);
-        }
-
-        /**
-         * Handle info button click
-         * @param {string} sourceId - Source identifier
-         */
-        _onInfoClicked(sourceId) {
-            try {
-                console.log(`Opening info dialog for ${sourceId}`);
-
-                // Create and open info dialog
-                const dialog = new WallpaperInfoDialog(sourceId, this._wallpaperManager);
-                dialog.open();
-            } catch (e) {
-                console.error(`Failed to open info dialog for ${sourceId}:`, e);
-            }
-        }
-
-        /**
-         * Handle play button click (set wallpaper)
-         * @param {string} sourceId - Source identifier
-         */
-        _onPlayClicked(sourceId) {
-            try {
-                const today = this._getTodayString();
-                const cacheDir = this._wallpaperManager.getDailyCacheDir(today);
-                const metadata = this._wallpaperManager.loadMetadata(cacheDir, sourceId);
-
-                if (metadata) {
-                    const imagePath = GLib.build_filenamev([cacheDir, metadata.filename]);
-                    const imageFile = Gio.File.new_for_path(imagePath);
-
-                    if (imageFile.query_exists(null)) {
-                        this._wallpaperManager.setWallpaper(imagePath);
-                        console.log(`Set wallpaper from ${sourceId}`);
-                    } else {
-                        console.warn(`Image file not found for ${sourceId}`);
-                    }
-                } else {
-                    console.warn(`No metadata found for ${sourceId}`);
-                }
-            } catch (e) {
-                console.error(`Failed to set wallpaper from ${sourceId}:`, e);
-            }
-        }
-
-        /**
-         * Handle retry button click
-         * @param {string} sourceId - Source identifier
-         */
-        _onRetryClicked(sourceId) {
-            if (this._worker) {
-                console.log(`Retry clicked for ${sourceId}`);
-                this._worker.retryDownload(sourceId);
-            } else {
-                console.warn('Worker not available for retry');
-            }
-        }
-
-        /**
-         * Get today's date string in DD.MM.YYYY format
-         * @returns {string} Date string
-         */
-        _getTodayString() {
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = now.getFullYear();
-            return `${day}.${month}.${year}`;
+    _connectSettings() {
+        this._settingsChangedId = this._settings.connect('changed::selected-sources', () => this.refresh());
         }
 
         destroy() {
-            // Disconnect all signals
-            this._signalIds.forEach(id => this._settings.disconnect(id));
-            this._signalIds = [];
-
-            super.destroy();
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+        super.destroy();
         }
     });

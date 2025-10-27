@@ -9,10 +9,18 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup';
 
+imports.gi.versions.Soup = '3.0';
+
+// Promisify Gio file operations to use async/await
+Gio._promisify(Gio.File.prototype, 'replace_contents_bytes_async', 'replace_contents_finish');
+Gio._promisify(Soup.Session.prototype, 'send_and_read_async', 'send_and_read_finish');
+Gio._promisify(Gio.File.prototype, 'replace_async', 'replace_finish');
+
+
 export class WallpaperManager {
     constructor(settings) {
         this._settings = settings;
-        this._cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-gnome-greeter']);
+        this._cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension']);
         this._sourcesConfig = null;
         this._httpSession = new Soup.Session();
     }
@@ -199,33 +207,52 @@ export class WallpaperManager {
      * @param {Array<string>} keys - Array of possible key paths
      * @returns {string|null} Extracted value or null
      */
-    _extractField(obj, keys) {
-        if (!obj || !Array.isArray(keys)) {
+    _extractField(obj, keys, findFirstValidConfig = null) {
+        if (!obj) return null;
+
+        if (findFirstValidConfig && findFirstValidConfig.enabled) {
+            const array = this._resolvePath(obj, findFirstValidConfig.array_path);
+            if (!Array.isArray(array)) return null;
+
+            for (const item of array) {
+                const itemData = findFirstValidConfig.item_path ? this._resolvePath(item, findFirstValidConfig.item_path) : item;
+                if (!itemData) continue;
+                
+                // Perform validation if specified
+                const validation = this._sourcesConfig[findFirstValidConfig.sourceId]?.validation?.item_validation;
+                if (validation) {
+                    let isValid = true;
+                    if (validation.reject_if_true) {
+                        for (const key of validation.reject_if_true) {
+                            if (this._resolvePath(itemData, key) === true) {
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isValid) continue;
+                }
+
+                const value = this._findValueInKeys(itemData, keys);
+                if (value) return value;
+            }
             return null;
         }
 
+        return this._findValueInKeys(obj, keys);
+    }
+
+    _resolvePath(obj, path) {
+        if (!path) return obj;
+        return path.split('.').reduce((o, k) => (o && o[k] !== undefined) ? o[k] : null, obj);
+    }
+    
+    _findValueInKeys(obj, keys) {
+        if (!Array.isArray(keys)) return null;
         for (const keyPath of keys) {
-            try {
-                const parts = keyPath.split('.');
-                let value = obj;
-                
-                for (const part of parts) {
-                    if (value && typeof value === 'object' && part in value) {
-                        value = value[part];
-                    } else {
-                        value = null;
-                        break;
-                    }
-                }
-
-                if (value !== null && value !== undefined) {
-                    return String(value);
-                }
-            } catch (e) {
-                continue;
-            }
+            const value = this._resolvePath(obj, keyPath);
+            if (value !== null) return String(value);
         }
-
         return null;
     }
 
@@ -244,7 +271,7 @@ export class WallpaperManager {
             }
 
             const wallpapers = [];
-            const selectedSources = this._settings.getSelectedSources();
+            const selectedSources = this._settings.get_strv('selected-sources');
 
             for (const sourceId of selectedSources) {
                 const metadata = this.loadMetadata(cacheDir, sourceId);
@@ -285,11 +312,10 @@ export class WallpaperManager {
      * @param {string} sourceId - Source identifier
      * @returns {Promise<Object>} Result object with success status and metadata
      */
-    async downloadFromSource(sourceId) {
+    async downloadFromSource(sourceId, progressCallback = null) {
         try {
             console.log(`Starting download from source: ${sourceId}`);
             
-            // Load sources config
             const config = this.loadSourcesConfig();
             if (!config || !config[sourceId]) {
                 throw new Error(`Source ${sourceId} not found in configuration`);
@@ -297,40 +323,73 @@ export class WallpaperManager {
 
             const sourceConfig = config[sourceId];
             
-            // Make API request
-            const apiResponse = await this._fetchFromAPI(sourceId, sourceConfig);
+            let apiUrl = sourceConfig.api_url;
+            const now = GLib.DateTime.new_now_local();
+            apiUrl = apiUrl.replace('{year}', now.get_year())
+                           .replace('{month:02d}', String(now.get_month()).padStart(2, '0'))
+                           .replace('{day:02d}', String(now.get_day_of_month()).padStart(2, '0'));
+
+            const apiResponse = await this._fetchFromAPI(apiUrl, sourceConfig.headers || {});
             
-            // Extract image URL
-            const imageUrl = this._extractField(apiResponse, sourceConfig.response_mapping?.image_url_keys);
+            // --- REVISED LOGIC FOR EXTRACTING DATA ---
+            let dataObject = apiResponse;
+            const findFirstConfig = sourceConfig.response_mapping?.find_first_valid;
+
+            if (findFirstConfig && findFirstConfig.enabled) {
+                const array = this._resolvePath(apiResponse, findFirstConfig.array_path);
+                if (!Array.isArray(array)) throw new Error('find_first_valid path did not resolve to an array.');
+
+                let foundValid = false;
+                for (const item of array) {
+                    const itemData = findFirstConfig.item_path ? this._resolvePath(item, findFirstConfig.item_path) : item;
+                    if (!itemData) continue;
+
+                    const validation = sourceConfig.validation?.item_validation;
+                    if (validation) {
+                        if (validation.reject_if_true?.some(key => this._resolvePath(itemData, key) === true)) {
+                            continue; // Skip this item
+                        }
+                    }
+                    dataObject = itemData; // Use the first valid item's data
+                    foundValid = true;
+                    break;
+                }
+                if (!foundValid) throw new Error('No valid items found in the array after filtering.');
+            } else if (sourceConfig.response_mapping?.data_path) {
+                dataObject = this._resolvePath(apiResponse, sourceConfig.response_mapping.data_path);
+                if (!dataObject) throw new Error(`data_path '${sourceConfig.response_mapping.data_path}' resolved to null.`);
+            }
+            // --- END OF REVISED LOGIC ---
+
+            let imageUrl = this._findValueInKeys(dataObject, sourceConfig.response_mapping?.image_url_keys);
+
             if (!imageUrl) {
                 throw new Error(`No image URL found in API response for ${sourceId}`);
             }
-
-            // Prepare cache directory
-            const today = this._getTodayString();
-            const cacheDir = this.getDailyCacheDir(today);
-            if (!this._ensureCacheDir(cacheDir)) {
-                throw new Error(`Failed to create cache directory: ${cacheDir}`);
+            
+            if (sourceConfig.response_mapping?.image_url_prefix) {
+                imageUrl = sourceConfig.response_mapping.image_url_prefix + imageUrl;
             }
 
-            // Determine file extension
+            const today = this._getTodayString();
+            const cacheDir = this.getDailyCacheDir(today);
+            this._ensureCacheDir(cacheDir);
+
             const extension = this._getImageExtension(imageUrl);
             const filename = `${sourceId}.${extension}`;
             const imagePath = GLib.build_filenamev([cacheDir, filename]);
 
-            // Download image
-            await this.downloadImage(imageUrl, imagePath);
+            await this.downloadImage(imageUrl, imagePath, sourceConfig.headers || {}, progressCallback);
 
-            // Transform to standard metadata
+            // Use the correct data object for metadata extraction
             const metadata = this._transformToStandardMetadata(
                 sourceId,
-                apiResponse,
+                dataObject, // Use the (potentially modified) dataObject
                 sourceConfig,
                 imageUrl,
                 filename
             );
 
-            // Save metadata
             if (!this._saveMetadata(cacheDir, sourceId, metadata)) {
                 throw new Error(`Failed to save metadata for ${sourceId}`);
             }
@@ -338,109 +397,54 @@ export class WallpaperManager {
             console.log(`Successfully downloaded wallpaper from ${sourceId}`);
             return { success: true, metadata };
         } catch (e) {
-            console.error(`Failed to download from ${sourceId}:`, e);
+            console.error(`Failed to download from ${sourceId}: ${e.message}`);
             throw e;
         }
     }
 
-    /**
-     * Fetch data from API
-     * @param {string} sourceId - Source identifier
-     * @param {Object} config - Source configuration
-     * @returns {Promise<Object>} API response data
-     */
-    async _fetchFromAPI(sourceId, config) {
-        return new Promise((resolve, reject) => {
-            try {
-                const message = Soup.Message.new('GET', config.api_url);
-                
-                // Add headers
-                if (config.headers) {
-                    for (const [key, value] of Object.entries(config.headers)) {
-                        message.request_headers.append(key, value);
-                    }
-                }
-
-                this._httpSession.send_and_read_async(
-                    message,
-                    GLib.PRIORITY_DEFAULT,
-                    null,
-                    (session, result) => {
-                        try {
-                            const bytes = session.send_and_read_finish(result);
-                            const decoder = new TextDecoder('utf-8');
-                            const responseText = decoder.decode(bytes.get_data());
-
-                            // Check HTTP status
-                            if (message.status_code !== 200) {
-                                reject(new Error(`HTTP ${message.status_code}: ${message.reason_phrase}`));
-                                return;
-                            }
-
-                            // Parse JSON
-                            const data = JSON.parse(responseText);
-                            resolve(data);
-                        } catch (e) {
-                            reject(new Error(`Failed to parse API response: ${e.message}`));
-                        }
-                    }
-                );
-            } catch (e) {
-                reject(new Error(`Failed to create HTTP request: ${e.message}`));
+    async _fetchFromAPI(url, headers) {
+        const message = Soup.Message.new('GET', url);
+        if (headers) {
+            for (const [key, value] of Object.entries(headers)) {
+                message.get_request_headers().append(key, value);
             }
-        });
+        }
+        
+        const bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+        
+        if (message.get_status() !== 200) {
+            const responseBody = new TextDecoder().decode(bytes.get_data());
+            throw new Error(`HTTP Error ${message.get_status()}: ${responseBody}`);
+        }
+        
+        const responseText = new TextDecoder().decode(bytes.get_data());
+        if (!responseText) {
+            throw new Error('API response was empty.');
+        }
+
+        try {
+            return JSON.parse(responseText);
+        } catch (e) {
+            throw new Error(`Failed to parse API response: ${e.message}`);
+        }
     }
 
-    /**
-     * Download image file
-     * @param {string} url - Image URL
-     * @param {string} filepath - Destination file path
-     * @returns {Promise<boolean>} True if downloaded successfully
-     */
-    async downloadImage(url, filepath) {
-        return new Promise((resolve, reject) => {
-            try {
-                const message = Soup.Message.new('GET', url);
-                
-                this._httpSession.send_and_read_async(
-                    message,
-                    GLib.PRIORITY_DEFAULT,
-                    null,
-                    (session, result) => {
-                        try {
-                            const bytes = session.send_and_read_finish(result);
+    async downloadImage(url, filepath, headers = {}, progressCallback = null) {
+        const message = Soup.Message.new('GET', url);
+        for (const [key, value] of Object.entries(headers)) {
+            message.get_request_headers().append(key, value);
+        }
+        
+        const bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
+        
+        if (message.get_status() !== 200) {
+            throw new Error(`HTTP Error ${message.get_status()} while downloading image`);
+        }
+        
+        const file = Gio.File.new_for_path(filepath);
+        await file.replace_contents_bytes_async(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
-                            // Check HTTP status
-                            if (message.status_code !== 200) {
-                                reject(new Error(`HTTP ${message.status_code}: ${message.reason_phrase}`));
-                                return;
-                            }
-
-                            // Save to file
-                            const file = Gio.File.new_for_path(filepath);
-                            const [success] = file.replace_contents(
-                                bytes.get_data(),
-                                null,
-                                false,
-                                Gio.FileCreateFlags.REPLACE_DESTINATION,
-                                null
-                            );
-
-                            if (success) {
-                                console.log(`Image saved to: ${filepath}`);
-                                resolve(true);
-                            } else {
-                                reject(new Error('Failed to save image file'));
-                            }
-                        } catch (e) {
-                            reject(new Error(`Failed to download image: ${e.message}`));
-                        }
-                    }
-                );
-            } catch (e) {
-                reject(new Error(`Failed to create image download request: ${e.message}`));
-            }
-        });
+        console.log(`Image saved to: ${filepath}`);
     }
 
     /**
@@ -498,7 +502,6 @@ export class WallpaperManager {
             // Set for both light and dark themes
             backgroundSettings.set_string('picture-uri', fileUri);
             backgroundSettings.set_string('picture-uri-dark', fileUri);
-
             console.log(`Wallpaper set successfully: ${filepath}`);
             return true;
         } catch (e) {
