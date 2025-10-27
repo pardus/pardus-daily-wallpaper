@@ -6,9 +6,19 @@ set -e
 EXTENSION_UUID="pardus-wallpaper-extension@pardus.org.tr"
 EXTENSION_DIR="$EXTENSION_UUID"
 INSTALL_DIR="$HOME/.local/share/gnome-shell/extensions/$EXTENSION_UUID"
+DCONF_PATH="/org/gnome/shell/extensions/pardus-wallpaper/"
 
-echo "==> Installing Pardus Wallpaper Extension..."
-echo ""
+echo "==> Preparing to install Pardus Wallpaper Extension..."
+
+# 0. Reset dconf settings to default
+echo "==> Resetting dconf settings to default..."
+dconf reset -f "$DCONF_PATH" || true
+
+# 1. Disable the extension first to ensure a clean state
+echo "==> Disabling extension if already enabled..."
+gnome-extensions disable "$EXTENSION_UUID" || true 
+
+echo "==> Installing..."
 
 # Create extensions directory if it doesn't exist
 mkdir -p "$HOME/.local/share/gnome-shell/extensions"
@@ -29,28 +39,16 @@ if [ -d "$INSTALL_DIR/schemas" ]; then
     glib-compile-schemas "$INSTALL_DIR/schemas/"
 fi
 
-# Try to enable the extension
+# 3. Enable the extension
 echo "==> Enabling extension..."
-gnome-extensions enable "$EXTENSION_UUID" 2>/dev/null && echo "✓ Extension enabled!" || echo "⚠ Extension will be available after GNOME Shell restart"
+gnome-extensions enable "$EXTENSION_UUID"
 
 echo ""
-echo "✓ Extension installed successfully!"
+echo "✓ Extension installed and enabled successfully!"
 echo ""
-echo "Installation path: $INSTALL_DIR"
-echo ""
-echo "Installed files:"
-echo "  - extension.js, indicator.js, worker.js"
-echo "  - wallpaperManager.js, settings.js, infoDialog.js"
-echo "  - prefs.js, stylesheet.css"
-echo "  - data/wallpaper_sources.json"
-echo "  - schemas/org.gnome.shell.extensions.pardus-wallpaper.gschema.xml"
-echo ""
-echo "To restart GNOME Shell:"
-echo "  - X11: Press Alt+F2, type 'r', and press Enter"
-echo "  - Wayland: Log out and log back in"
-echo ""
-echo "To view extension preferences:"
-echo "  gnome-extensions prefs $EXTENSION_UUID"
-echo ""
-echo "To view logs:"
-echo "  journalctl -f -o cat /usr/bin/gnome-shell | grep -i pardus"
+echo "==> Starting nested GNOME Shell for live testing..."
+echo "==> Close the nested window (or press Ctrl+C here) to stop."
+echo "------------------------------------------------------------"
+
+# 4. Start a nested session to see the logs live
+dbus-run-session -- gnome-shell --nested
