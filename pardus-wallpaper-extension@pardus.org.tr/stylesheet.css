@@ -169,3 +169,27 @@
 .wallpaper-button:active {
     background-color: rgba(255, 255, 255, 0.15);
 }
+
+.pardus-wallpaper-spinner {
+    width: 1em;
+    height: 1em;
+}
+
+.success-label {
+    color: #2ecc71; /* Green */
+}
+
+.error-label {
+    color: #cc0000;
+    font-size: smaller;
+}
+
+/* Add a spinning animation to any icon with this class */
+.spinning {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
