@@ -112,40 +112,6 @@
         "media_type_check": "image"
       }
     },
-    "wallhaven": {
-      "name": "Wallhaven Daily",
-      "description": "Top community wallpapers from Wallhaven",
-      "enabled": true,
-      "api_url": "https://wallhaven.cc/api/v1/search?sorting=toplist&topRange=1d&atleast=1920x1080&categories=100&purity=100",
-      "headers": {},
-      "response_mapping": {
-        "data_path": "data.{index}",
-        "find_first_valid": {
-          "enabled": true,
-          "array_path": "data",
-          "item_path": "",
-          "max_items": 5
-        },
-        "title_keys": [
-          "id"
-        ],
-        "description_keys": [
-          "resolution"
-        ],
-        "image_url_keys": [
-          "path"
-        ],
-        "thumbnail_url_keys": [
-          "thumbs.large"
-        ],
-        "image_url_prefix": ""
-      },
-      "validation": {
-        "required_fields": [
-          "data"
-        ]
-      }
-    },
     "wikipedia": {
       "name": "Wikipedia POTD",
       "description": "Wikipedia Picture of the Day",
