@@ -253,10 +253,10 @@ export class BackgroundWorker {
      * Start daily check timer
      */
     _startDailyCheckTimer() {
-        // Check every hour (3600 seconds)
+        // Check every 6 hours (21600 seconds)
         this._dailyCheckTimer = GLib.timeout_add_seconds(
             GLib.PRIORITY_DEFAULT,
-            3600,
+            21600,
             async () => {
                 try {
                     await this._checkDailyWallpapers();

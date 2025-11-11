@@ -65,6 +65,102 @@ export const Indicator = GObject.registerClass({
         this._buildGeneralSection();
     }
 
+    _createSourcesView() {
+        const box = new St.BoxLayout({ vertical: true, style_class: 'sources-view' });
+        const selectedSources = this._settings.get_strv('selected-sources');
+        const sources = this._loadWallpaperSources();
+
+        for (const sourceId of selectedSources) {
+            const sourceData = sources[sourceId];
+            if (sourceData) {
+                const menuItem = new PopupMenu.PopupMenuItem(sourceData.name || sourceId);
+                box.add_child(menuItem);
+                menuItem.connect('activate', () => {
+                    this.emit('set-wallpaper-for-source', sourceId);
+                });
+            }
+        }
+
+        box.add_child(new PopupMenu.PopupSeparatorMenuItem());
+
+        const settingsItem = new PopupMenu.PopupMenuItem(_('Settings'));
+        settingsItem.connect('activate', () => this._openPreferences());
+        box.add_child(settingsItem);
+
+        return box;
+    }
+
+    _createMyWallpapersView() {
+        const box = new St.BoxLayout({ vertical: true, style_class: 'wallpapers-view' });
+        const wallpapersDir = Gio.File.new_for_path(
+            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension'])
+        );
+
+        if (!wallpapersDir.query_exists(null)) {
+            box.add_child(new St.Label({ text: _('No downloaded wallpapers found.'), style_class: 'no-wallpapers-label' }));
+            return box;
+        }
+
+        const dateDirs = this._getDateDirectories(wallpapersDir);
+        const todayStr = this._getTodayString();
+
+        if (dateDirs.length === 0) {
+            box.add_child(new St.Label({ text: _('No downloaded wallpapers found.'), style_class: 'no-wallpapers-label' }));
+            return box;
+        }
+
+        for (const dateDir of dateDirs) {
+            const dateStr = dateDir.get_basename();
+            let formattedDate = dateStr;
+            try {
+                const [day, month, year] = dateStr.split('.').map(Number);
+                const dateTime = GLib.DateTime.new_local(year, month, day, 0, 0, 0);
+                formattedDate = dateTime.format('%d %B %Y');
+            } catch (e) {
+                // ignore
+            }
+
+            const title = dateStr === todayStr ? `${formattedDate} (${_('Today')})` : formattedDate;
+            const dateLabel = new St.Label({ text: title, style_class: 'date-header' });
+            box.add_child(dateLabel);
+
+            // In a real implementation, you would list wallpapers for this date
+        }
+
+        return box;
+    }
+
+    _getDateDirectories(mainDir) {
+        const enumerator = mainDir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+        const dirs = [];
+        let fileInfo;
+        while ((fileInfo = enumerator.next_file(null))) {
+            if (fileInfo.get_file_type() === Gio.FileType.DIRECTORY) {
+                if (/^\d{2}\.\d{2}\.\d{4}$/.test(fileInfo.get_name())) {
+                    dirs.push(enumerator.get_child(fileInfo));
+                }
+            }
+        }
+        dirs.sort((a, b) => {
+            const nameA = a.get_basename();
+            const nameB = b.get_basename();
+            try {
+                const [dayA, monthA, yearA] = nameA.split('.').map(Number);
+                const [dayB, monthB, yearB] = nameB.split('.').map(Number);
+                const dateA = GLib.DateTime.new_local(yearA, monthA, dayA, 0, 0, 0);
+                const dateB = GLib.DateTime.new_local(yearB, monthB, dayB, 0, 0, 0);
+                return dateB.compare(dateA);
+            } catch (e) {
+                return 0;
+            }
+        });
+        return dirs;
+    }
+
+    _getTodayString() {
+        return GLib.DateTime.new_now_local().format('%d.%m.%Y');
+    }
+
     _buildSourceRow(sourceId, sourceData) {
         const menuItem = new PopupMenu.PopupMenuItem(sourceData.name || sourceId);
         this.menu.addMenuItem(menuItem);

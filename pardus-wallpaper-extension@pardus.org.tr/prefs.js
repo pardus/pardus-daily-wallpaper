@@ -137,7 +137,7 @@ class WallpaperInfoDialog extends Adw.Window {
         if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
             try {
                 const dateTime = GLib.DateTime.new_local(year, month, day, 0, 0, 0);
-                formattedDate = dateTime.format('%B %d, %Y');
+                formattedDate = dateTime.format('%d %B %Y');
             } catch (e) {
                 logError(e, 'Failed to format date string for info dialog');
             }
@@ -472,7 +472,19 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
 
             for (const dateDir of dateDirs) {
                 const dateName = dateDir.get_basename();
-                const title = dateName === todayStr ? `${dateName} (${_('Today')})` : dateName;
+
+                let formattedDate = dateName;
+                try {
+                    const [day, month, year] = dateName.split('.').map(Number);
+                    const dateTime = GLib.DateTime.new_local(year, month, day, 0, 0, 0);
+                    formattedDate = dateTime.format('%d %B %Y');
+                } catch (e) {
+                    // ignore
+                }
+
+                const title = dateName === todayStr
+                    ? `${formattedDate} (${_('Today')})`
+                    : formattedDate;
 
                 const group = new Adw.PreferencesGroup({ title: title });
                 page.add(group);
@@ -531,8 +543,95 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
     }
 
     _refreshMyWallpapersPage() {
-        this._window.remove(this._myWallpapersPage);
-        this._myWallpapersPage = this._createMyWallpapersPage();
+        if (this._myWallpapersPage) {
+            this._window.remove(this._myWallpapersPage);
+        }
+
+        this._myWallpapersPage = new Adw.PreferencesPage({
+            title: _('My Wallpapers'),
+            icon_name: 'document-open-recent-symbolic',
+        });
+
+        const group = new Adw.PreferencesGroup();
+        this._myWallpapersPage.add(group);
+
+        const wallpapersDir = Gio.File.new_for_path(
+            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension'])
+        );
+
+        if (!wallpapersDir.query_exists(null)) {
+            // Show a message if the directory doesn't exist
+            const box = new Gtk.Box({
+                orientation: Gtk.Orientation.VERTICAL,
+                halign: Gtk.Align.CENTER,
+                valign: Gtk.Align.CENTER,
+                spacing: 12,
+                margin_top: 24,
+                margin_bottom: 24,
+            });
+            box.append(new Gtk.Image({ icon_name: 'folder-open-symbolic', pixel_size: 48 }));
+            box.append(new Gtk.Label({ label: _('No downloaded wallpapers found.') }));
+            group.add(box);
+            this._window.add(this._myWallpapersPage);
+            return;
+        }
+
+        const dateDirs = this._getDateDirectories(wallpapersDir);
+
+        if (dateDirs.length === 0) {
+            const box = new Gtk.Box({
+                orientation: Gtk.Orientation.VERTICAL,
+                halign: Gtk.Align.CENTER,
+                valign: Gtk.Align.CENTER,
+                spacing: 12,
+                margin_top: 24,
+                margin_bottom: 24,
+            });
+            box.append(new Gtk.Image({ icon_name: 'folder-open-symbolic', pixel_size: 48 }));
+            box.append(new Gtk.Label({ label: _('No downloaded wallpapers found.') }));
+            group.add(box);
+        } else {
+            for (const dateDir of dateDirs) {
+                const dateStr = dateDir.get_basename();
+                const todayStr = this._getTodayString();
+
+                let formattedDate = dateStr;
+                try {
+                    const [day, month, year] = dateStr.split('.').map(Number);
+                    const dateTime = GLib.DateTime.new_local(year, month, day, 0, 0, 0);
+                    formattedDate = dateTime.format('%d %B %Y');
+                } catch (e) {
+                    logError(e, `Failed to format date: ${dateStr}`);
+                }
+
+                const title = dateStr === todayStr
+                    ? `${formattedDate} (${_('Today')})`
+                    : formattedDate;
+
+                const dateLabel = new Gtk.Label({
+                    label: `<b>${title}</b>`,
+                    use_markup: true,
+                    xalign: 0,
+                    css_classes: ['title-2'],
+                    margin_top: 12,
+                    margin_bottom: 6,
+                });
+                group.add(dateLabel);
+
+                const wallpapers = this._getWallpapersInDirectory(dateDir);
+                const listBox = new Gtk.ListBox({
+                    selection_mode: Gtk.SelectionMode.NONE,
+                    css_classes: ['box-list'],
+                });
+                group.add(listBox);
+
+                for (const wallpaperFile of wallpapers) {
+                    const row = new WallpaperRow(wallpaperFile);
+                    listBox.append(row);
+                }
+            }
+        }
+
         this._window.add(this._myWallpapersPage);
     }
 
@@ -553,20 +652,24 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
             const nameA = a.get_basename();
             const nameB = b.get_basename();
 
-            const dateA = GLib.DateTime.new_from_unix_local(Date.parse(nameA.split('.').reverse().join('-')));
-            const dateB = GLib.DateTime.new_from_unix_local(Date.parse(nameB.split('.').reverse().join('-')));
+            try {
+                const [dayA, monthA, yearA] = nameA.split('.').map(Number);
+                const [dayB, monthB, yearB] = nameB.split('.').map(Number);
 
-            if (!dateA && !dateB) return 0;
-            if (!dateA) return 1;
-            if (!dateB) return -1;
+                const dateA = GLib.DateTime.new_local(yearA, monthA, dayA, 0, 0, 0);
+                const dateB = GLib.DateTime.new_local(yearB, monthB, dayB, 0, 0, 0);
 
-            return dateB.compare(dateA);
+                return dateB.compare(dateA);
+            } catch (e) {
+                logError(e, `Failed to parse or compare dates: ${nameA}, ${nameB}`);
+                return 0;
+            }
         });
         return dirs;
     }
 
     _getWallpapersInDirectory(dateDir) {
-        const enumerator = dateDir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+        const enumerator = dateDir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
         const wallpapers = [];
         let fileInfo;
         while ((fileInfo = enumerator.next_file(null))) {
