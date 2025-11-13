@@ -23,11 +23,15 @@ export class BackgroundWorker {
     start() {
         console.log('Starting background worker');
         
-        this._checkDailyWallpapers().catch(err => {
-            console.error('Error during initial wallpaper check:', err);
+        // Delay the initial check to ensure the desktop environment is fully loaded.
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
+            this._checkDailyWallpapers().catch(err => {
+                console.error('Error during initial wallpaper check:', err);
+            });
+            return GLib.SOURCE_REMOVE; // Run only once.
         });
         
-        // Start daily check timer (check every hour)
+        // Start daily check timer (check every 6 hours)
         this._startDailyCheckTimer();
     }
 
@@ -70,6 +74,7 @@ export class BackgroundWorker {
 
         if (allCached) {
             console.log('All selected sources are cached for today.');
+            await this._applyDailyWallpaper();
             this._scheduleNextCheck();
         } else {
             console.log(`Missing cache for sources: ${sourcesToDownload.join(', ')}. Starting download.`);
@@ -104,7 +109,47 @@ export class BackgroundWorker {
                 this._indicator.setDownloadingState(false);
                 this._indicator.refresh();
             }
+            await this._applyDailyWallpaper();
             console.log('Download process completed.');
+        }
+    }
+
+    /**
+     * Apply a wallpaper for today from the available sources.
+     * Sets the wallpaper from the first available selected source.
+     */
+    async _applyDailyWallpaper() {
+        try {
+            const selectedSources = this._settings.get_strv('selected-sources');
+            if (selectedSources.length === 0) {
+                console.log('No sources selected, cannot apply a wallpaper.');
+                return;
+            }
+
+            // Use the first selected source as the default wallpaper for the day
+            const preferredSourceId = selectedSources[0];
+            const today = this._getTodayString();
+            const todayDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', today]);
+            const dir = Gio.File.new_for_path(todayDir);
+
+            if (!dir.query_exists(null)) {
+                return; // No cache dir for today, nothing to apply
+            }
+
+            const wallpapers = [];
+            this._findImagesIn(dir, wallpapers);
+
+            const wallpaperPath = wallpapers.find(p => {
+                const fileName = p.split('/').pop();
+                return fileName.startsWith(preferredSourceId + '.');
+            });
+
+            if (wallpaperPath) {
+                await this._setBackground(wallpaperPath);
+                console.log(`Automatically set wallpaper for today to source: ${preferredSourceId}`);
+            }
+        } catch (e) {
+            console.error(`Failed to automatically apply daily wallpaper:`, e);
         }
     }
 
@@ -268,12 +313,59 @@ export class BackgroundWorker {
         );
     }
 
+    _findImagesIn(dir, resultList) {
+        if (!dir.query_exists(null)) {
+            return;
+        }
+        const enumerator = dir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+        let fileInfo;
+        while ((fileInfo = enumerator.next_file(null))) {
+            const name = fileInfo.get_name();
+            if (name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg')) {
+                resultList.push(GLib.build_filenamev([dir.get_path(), name]));
+            }
+        }
+    }
+
+    async _runCommand(command) {
+        return new Promise((resolve, reject) => {
+            const [success, argv] = GLib.shell_parse_argv(command);
+            if (!success) {
+                return reject(new Error(`Failed to parse command: ${command}`));
+            }
+    
+            try {
+                const proc = Gio.Subprocess.new(argv, Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
+                
+                proc.communicate_utf8_async(null, null, (source, res) => {
+                    try {
+                        const [ok, stdout, stderr] = source.communicate_utf8_finish(res);
+                        if (!ok) {
+                            return reject(new Error(`Command failed with stderr: ${stderr}`));
+                        }
+                        resolve(stdout);
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
     async _setBackground(filePath) {
         try {
             const fileUri = Gio.File.new_for_path(filePath).get_uri();
             const bgSettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
+            
+            // Set for both light and dark themes
             bgSettings.set_string('picture-uri', fileUri);
             bgSettings.set_string('picture-uri-dark', fileUri);
+
+            // Force UI to refresh, which can help ensure the wallpaper change is visible
+            Main.customizeUI();
+
         } catch (e) {
             console.error(`Failed to set background to ${filePath}:`, e);
         }
