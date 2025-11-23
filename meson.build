@@ -16,15 +16,16 @@ locale_dir = join_paths(datadir, 'locale')
 
 # Subdirectories
 subdir('pardus-daily-wallpaper@pardus.org.tr/po')
+subdir('pardus-daily-wallpaper@pardus.org.tr/schemas')
 
 # Install extension files
 install_subdir(uuid,
   install_dir: join_paths(datadir, 'gnome-shell', 'extensions'),
   strip_directory: false,
-  exclude_directories: ['po']
+  exclude_directories: ['po', 'schemas']
 )
 
-# Compile schemas
+# Post-install script to compile schemas
 gnome.post_install(
   glib_compile_schemas: true,
   gtk_update_icon_cache: false,
