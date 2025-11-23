@@ -36,6 +36,10 @@
     margin-right: 8px;
 }
 
+.wallpaper-source-buttons {
+    spacing: 6px;
+}
+
 .wallpaper-source-button {
     padding: 6px;
     border-radius: 4px;
@@ -94,6 +98,25 @@
 .wallpaper-info {
     font-size: 11pt;
     color: #999;
+}
+
+/* Details box (Source/Date icons) */
+.wallpaper-details-box {
+    spacing: 24px;
+}
+
+.wallpaper-detail-item {
+    spacing: 6px;
+}
+
+.wallpaper-detail-icon {
+    icon-size: 16px;
+    color: #999;
+}
+
+.wallpaper-detail-text {
+    font-size: 11pt;
+    color: #ccc;
 }
 
 .wallpaper-description {

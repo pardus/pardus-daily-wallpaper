@@ -7,14 +7,12 @@
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import Soup from 'gi://Soup';
-
-imports.gi.versions.Soup = '3.0';
+import Soup from 'gi://Soup?version=3.0';
 
 // Promisify Gio file operations to use async/await
-Gio._promisify(Gio.File.prototype, 'replace_contents_bytes_async', 'replace_contents_finish');
+// Note: Explicit promisification is safest across GJS versions when signatures vary.
+// Gio._promisify(Gio.File.prototype, 'replace_contents_async', 'replace_contents_finish');
 Gio._promisify(Soup.Session.prototype, 'send_and_read_async', 'send_and_read_finish');
-Gio._promisify(Gio.File.prototype, 'replace_async', 'replace_finish');
 
 
 export class WallpaperManager {
@@ -102,13 +100,41 @@ export class WallpaperManager {
     }
 
     /**
+     * Helper to save file content using manual callback to avoid GJS promisify argument issues
+     */
+    _saveFileAsync(file, bytes, cancellable = null) {
+        return new Promise((resolve, reject) => {
+            try {
+                file.replace_contents_bytes_async(
+                    bytes,
+                    null, // etag
+                    false, // make_backup
+                    Gio.FileCreateFlags.REPLACE_DESTINATION,
+                    cancellable,
+                    (obj, res) => {
+                        try {
+                            const [success] = obj.replace_contents_finish(res);
+                            if (success) resolve(true);
+                            else reject(new Error('File save reported failure'));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                );
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    /**
      * Save metadata to JSON file
      * @param {string} cacheDir - Cache directory path
      * @param {string} sourceId - Source identifier
      * @param {Object} metadata - Metadata object
      * @returns {boolean} True if saved successfully
      */
-    _saveMetadata(cacheDir, sourceId, metadata) {
+    async _saveMetadata(cacheDir, sourceId, metadata) {
         try {
             if (!this._ensureCacheDir(cacheDir)) {
                 return false;
@@ -116,21 +142,13 @@ export class WallpaperManager {
 
             const jsonPath = GLib.build_filenamev([cacheDir, `${sourceId}.json`]);
             const jsonContent = JSON.stringify(metadata, null, 2);
+            const bytes = new GLib.Bytes(new TextEncoder().encode(jsonContent));
             
             const file = Gio.File.new_for_path(jsonPath);
-            const [success] = file.replace_contents(
-                jsonContent,
-                null,
-                false,
-                Gio.FileCreateFlags.REPLACE_DESTINATION,
-                null
-            );
+            await this._saveFileAsync(file, bytes);
 
-            if (success) {
-                console.log(`Saved metadata for ${sourceId}`);
-                return true;
-            }
-            return false;
+            console.log(`Saved metadata for ${sourceId}`);
+            return true;
         } catch (e) {
             console.error(`Failed to save metadata for ${sourceId}:`, e);
             return false;
@@ -417,7 +435,7 @@ export class WallpaperManager {
         const bytes = await this._httpSession.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null);
         
         if (message.get_status() !== 200) {
-            const responseBody = new TextDecoder().decode(bytes.get_data());
+            const responseBody = bytes ? new TextDecoder().decode(bytes.get_data()) : '';
             throw new Error(`HTTP Error ${message.get_status()}: ${responseBody}`);
         }
         
@@ -446,7 +464,7 @@ export class WallpaperManager {
         }
         
         const file = Gio.File.new_for_path(filepath);
-        await file.replace_contents_bytes_async(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+        await this._saveFileAsync(file, bytes);
 
         console.log(`Image saved to: ${filepath}`);
     }

@@ -34,7 +34,7 @@ export default class PardusWallpaperExtension extends Extension {
 
             this._wallpaperManager = new WallpaperManager(this._settingsManager);
             
-            this._indicator = new Indicator(settings);
+            this._indicator = new Indicator(settings, this._wallpaperManager);
             Main.panel.addToStatusArea(this.uuid, this._indicator);
 
             this._worker = new BackgroundWorker(this._settingsManager.getSettings(), this._wallpaperManager, this._indicator);
@@ -51,7 +51,7 @@ export default class PardusWallpaperExtension extends Extension {
             }
 
         } catch (e) {
-            logError(e, 'Failed to enable Pardus Wallpaper Extension');
+            console.error('Failed to enable Pardus Wallpaper Extension:', e);
         }
     }
 

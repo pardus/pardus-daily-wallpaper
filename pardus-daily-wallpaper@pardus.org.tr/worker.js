@@ -109,7 +109,17 @@ export class BackgroundWorker {
                 this._indicator.setDownloadingState(false);
                 this._indicator.refresh();
             }
-            await this._applyDailyWallpaper();
+            const appliedSourceId = await this._applyDailyWallpaper();
+            if (appliedSourceId) {
+                // Find source name for nicer notification
+                const config = this._wallpaperManager.loadSourcesConfig();
+                const sourceName = config[appliedSourceId]?.name || appliedSourceId;
+                
+                this._showNotification(
+                    'Daily Wallpaper Updated',
+                    `New wallpaper applied from ${sourceName}`
+                );
+            }
             console.log('Download process completed.');
         }
     }
@@ -123,7 +133,7 @@ export class BackgroundWorker {
             const selectedSources = this._settings.get_strv('selected-sources');
             if (selectedSources.length === 0) {
                 console.log('No sources selected, cannot apply a wallpaper.');
-                return;
+                return false;
             }
 
             // Use the first selected source as the default wallpaper for the day
@@ -133,7 +143,7 @@ export class BackgroundWorker {
             const dir = Gio.File.new_for_path(todayDir);
 
             if (!dir.query_exists(null)) {
-                return; // No cache dir for today, nothing to apply
+                return false; // No cache dir for today, nothing to apply
             }
 
             const wallpapers = [];
@@ -147,9 +157,12 @@ export class BackgroundWorker {
             if (wallpaperPath) {
                 await this._setBackground(wallpaperPath);
                 console.log(`Automatically set wallpaper for today to source: ${preferredSourceId}`);
+                return preferredSourceId;
             }
+            return false;
         } catch (e) {
             console.error(`Failed to automatically apply daily wallpaper:`, e);
+            return false;
         }
     }
 
@@ -364,7 +377,7 @@ export class BackgroundWorker {
             bgSettings.set_string('picture-uri-dark', fileUri);
 
             // Force UI to refresh, which can help ensure the wallpaper change is visible
-            Main.customizeUI();
+            // Main.customizeUI();
 
         } catch (e) {
             console.error(`Failed to set background to ${filePath}:`, e);

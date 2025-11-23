@@ -5,14 +5,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import Adw from 'gi://Adw';
+import Adw from 'gi://Adw?version=1';
 import Gio from 'gi://Gio';
-import Gtk from 'gi://Gtk';
+import Gtk from 'gi://Gtk?version=4.0';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Soup from 'gi://Soup';
-
-imports.gi.versions.Soup = '3.0';
+import Soup from 'gi://Soup?version=3.0';
 
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -146,6 +144,18 @@ class WallpaperInfoDialog extends Adw.Window {
         dateBox.append(new Gtk.Image({ icon_name: 'view-calendar-symbolic', pixel_size: 16 }));
         dateBox.append(new Gtk.Label({ label: formattedDate }));
         detailsBox.append(dateBox);
+
+        // Copyright (New)
+        if (this._metadata.copyright) {
+            const copyrightLabel = new Gtk.Label({
+                label: `© ${this._metadata.copyright}`,
+                xalign: 0,
+                wrap: true,
+                css_classes: ['caption', 'dim-label'],
+                margin_top: 6,
+            });
+            infoBox.append(copyrightLabel);
+        }
     }
     
     _openContainingFolder() {
@@ -448,12 +458,20 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
             icon_name: 'folder-pictures-symbolic',
         });
 
+        this._buildMyWallpapersContent(page);
+        return page;
+    }
+
+    _buildMyWallpapersContent(page) {
+        // Since we are recreating the page on refresh, we don't need to clear content manually here.
+        // This avoids any issues with removing internal children of AdwPreferencesPage.
+
         const mainDir = Gio.File.new_for_path(WALLPAPER_DIR);
         if (!mainDir.query_exists(null)) {
             const group = new Adw.PreferencesGroup();
             page.add(group);
             group.add(new Adw.ActionRow({ title: _('No wallpapers downloaded yet.') }));
-            return page;
+            return;
         }
 
         try {
@@ -463,7 +481,7 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
                  const group = new Adw.PreferencesGroup();
                  page.add(group);
                  group.add(new Adw.ActionRow({ title: _('No wallpapers found in cache.') }));
-                 return page;
+                 return;
             }
 
             const todayStr = GLib.DateTime.new_now_local().format('%d.%m.%Y');
@@ -532,8 +550,6 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
                 subtitle: e.message
             }));
         }
-        
-        return page;
     }
     
     _showDownloadProgressDialog(missingSources) {
@@ -547,91 +563,7 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
             this._window.remove(this._myWallpapersPage);
         }
 
-        this._myWallpapersPage = new Adw.PreferencesPage({
-            title: _('My Wallpapers'),
-            icon_name: 'document-open-recent-symbolic',
-        });
-
-        const group = new Adw.PreferencesGroup();
-        this._myWallpapersPage.add(group);
-
-        const wallpapersDir = Gio.File.new_for_path(
-            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper'])
-        );
-
-        if (!wallpapersDir.query_exists(null)) {
-            // Show a message if the directory doesn't exist
-            const box = new Gtk.Box({
-                orientation: Gtk.Orientation.VERTICAL,
-                halign: Gtk.Align.CENTER,
-                valign: Gtk.Align.CENTER,
-                spacing: 12,
-                margin_top: 24,
-                margin_bottom: 24,
-            });
-            box.append(new Gtk.Image({ icon_name: 'folder-open-symbolic', pixel_size: 48 }));
-            box.append(new Gtk.Label({ label: _('No downloaded wallpapers found.') }));
-            group.add(box);
-            this._window.add(this._myWallpapersPage);
-            return;
-        }
-
-        const dateDirs = this._getDateDirectories(wallpapersDir);
-
-        if (dateDirs.length === 0) {
-            const box = new Gtk.Box({
-                orientation: Gtk.Orientation.VERTICAL,
-                halign: Gtk.Align.CENTER,
-                valign: Gtk.Align.CENTER,
-                spacing: 12,
-                margin_top: 24,
-                margin_bottom: 24,
-            });
-            box.append(new Gtk.Image({ icon_name: 'folder-open-symbolic', pixel_size: 48 }));
-            box.append(new Gtk.Label({ label: _('No downloaded wallpapers found.') }));
-            group.add(box);
-        } else {
-            for (const dateDir of dateDirs) {
-                const dateStr = dateDir.get_basename();
-                const todayStr = this._getTodayString();
-
-                let formattedDate = dateStr;
-                try {
-                    const [day, month, year] = dateStr.split('.').map(Number);
-                    const dateTime = GLib.DateTime.new_local(year, month, day, 0, 0, 0);
-                    formattedDate = dateTime.format('%d %B %Y');
-                } catch (e) {
-                    logError(e, `Failed to format date: ${dateStr}`);
-                }
-
-                const title = dateStr === todayStr
-                    ? `${formattedDate} (${_('Today')})`
-                    : formattedDate;
-
-                const dateLabel = new Gtk.Label({
-                    label: `<b>${title}</b>`,
-                    use_markup: true,
-                    xalign: 0,
-                    css_classes: ['title-2'],
-                    margin_top: 12,
-                    margin_bottom: 6,
-                });
-                group.add(dateLabel);
-
-                const wallpapers = this._getWallpapersInDirectory(dateDir);
-                const listBox = new Gtk.ListBox({
-                    selection_mode: Gtk.SelectionMode.NONE,
-                    css_classes: ['box-list'],
-                });
-                group.add(listBox);
-
-                for (const wallpaperFile of wallpapers) {
-                    const row = new WallpaperRow(wallpaperFile);
-                    listBox.append(row);
-                }
-            }
-        }
-
+        this._myWallpapersPage = this._createMyWallpapersPage();
         this._window.add(this._myWallpapersPage);
     }
 

@@ -3,7 +3,7 @@
   <schema id="org.gnome.shell.extensions.pardus-daily-wallpaper" path="/org/gnome/shell/extensions/pardus-daily-wallpaper/">
     
     <key name="selected-sources" type="as">
-      <default>['bing', 'reddit', 'nasa', 'wikipedia']</default>
+      <default>['nasa', 'wikipedia']</default>
       <summary>Selected wallpaper sources</summary>
       <description>List of enabled wallpaper source IDs</description>
     </key>

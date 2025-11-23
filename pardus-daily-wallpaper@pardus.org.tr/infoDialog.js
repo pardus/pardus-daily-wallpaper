@@ -12,6 +12,7 @@ import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 export const WallpaperInfoDialog = GObject.registerClass(
     class WallpaperInfoDialog extends ModalDialog.ModalDialog {
@@ -75,14 +76,6 @@ export const WallpaperInfoDialog = GObject.registerClass(
             });
             metadataBox.add_child(titleLabel);
 
-            // Source and date
-            const infoText = `${metadata.source} • ${metadata.date}`;
-            const infoLabel = new St.Label({
-                text: infoText,
-                style_class: 'wallpaper-info',
-            });
-            metadataBox.add_child(infoLabel);
-
             // Description
             if (metadata.description) {
                 const descLabel = new St.Label({
@@ -94,10 +87,31 @@ export const WallpaperInfoDialog = GObject.registerClass(
                 metadataBox.add_child(descLabel);
             }
 
+            // Details Box (Source and Date)
+            const detailsBox = new St.BoxLayout({
+                vertical: false,
+                style_class: 'wallpaper-details-box',
+                x_align: Clutter.ActorAlign.START
+            });
+            
+            // Source
+            const sourceBox = new St.BoxLayout({ style_class: 'wallpaper-detail-item' });
+            sourceBox.add_child(new St.Icon({ icon_name: 'avatar-default-symbolic', style_class: 'wallpaper-detail-icon' }));
+            sourceBox.add_child(new St.Label({ text: metadata.source || 'Unknown', style_class: 'wallpaper-detail-text' }));
+            detailsBox.add_child(sourceBox);
+
+            // Date
+            const dateBox = new St.BoxLayout({ style_class: 'wallpaper-detail-item' });
+            dateBox.add_child(new St.Icon({ icon_name: 'view-calendar-symbolic', style_class: 'wallpaper-detail-icon' }));
+            dateBox.add_child(new St.Label({ text: metadata.date || '', style_class: 'wallpaper-detail-text' }));
+            detailsBox.add_child(dateBox);
+
+            metadataBox.add_child(detailsBox);
+
             // Copyright
             if (metadata.copyright) {
                 const copyrightLabel = new St.Label({
-                    text: metadata.copyright,
+                    text: `© ${metadata.copyright}`,
                     style_class: 'wallpaper-copyright',
                 });
                 copyrightLabel.clutter_text.line_wrap = true;
@@ -109,13 +123,18 @@ export const WallpaperInfoDialog = GObject.registerClass(
 
             // Buttons
             this.addButton({
-                label: 'Set as Wallpaper',
+                label: _('Set as Wallpaper'),
                 action: () => this._setWallpaper(imagePath),
                 key: Clutter.KEY_Return,
             });
 
             this.addButton({
-                label: 'Close',
+                label: _('Open Folder'),
+                action: () => this._openContainingFolder(cacheDir),
+            });
+
+            this.addButton({
+                label: _('Close'),
                 action: () => this.close(),
                 key: Clutter.KEY_Escape,
             });
@@ -143,6 +162,17 @@ export const WallpaperInfoDialog = GObject.registerClass(
                 this.close();
             } catch (e) {
                 console.error('Failed to set wallpaper from dialog:', e);
+            }
+        }
+
+        _openContainingFolder(dirPath) {
+            try {
+                const file = Gio.File.new_for_path(dirPath);
+                const uri = file.get_uri();
+                Gio.AppInfo.launch_default_for_uri_async(uri, null, null, null);
+                this.close();
+            } catch (e) {
+                console.error('Failed to open folder:', e);
             }
         }
 
