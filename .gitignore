@@ -1,5 +1,28 @@
-# Kiro specs and settings
-.kiro/
+debian/.debhelper/
+debian/files
+debian/pardus-daily-wallpaper.substvars
+debian/pardus-daily-wallpaper/
+debian/pardus-daily-wallpaper.debhelper.log
+debian/pardus-daily-wallpaper.postinst.debhelper
+debian/pardus-daily-wallpaper.postrm.debhelper
+debian/pardus-daily-wallpaper.prerm.debhelper
+
+debian/pardus-daily-wallpaper.preinst.debhelper
+debian/gnome-shell-extension-pardus-daily-wallpaper
+debian/debhelper-build-stamp
+**/**.substvars
+**/**.debhelper
+**/**.debhelper.log
+**/**.debhelper.log.gz
+**/**.debhelper.log.gz.1
+**/**.debhelper.log.gz.1.gz
+**/**.debhelper.log.gz.1.gz.1
+**/**.debhelper.log.gz.1.gz.1.gz
+**/**.debhelper.log.gz.1.gz.1.gz.1
+build
+obj-x86_64-linux-gnu
+
+
 
 # GNOME Extension compiled schemas
 schemas/gschemas.compiled
