@@ -20,9 +20,13 @@ Gio._promisify(Gio.File.prototype, 'replace_async', 'replace_finish');
 export class WallpaperManager {
     constructor(settings) {
         this._settings = settings;
-        this._cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension']);
+        this._cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper']);
         this._sourcesConfig = null;
-        this._httpSession = new Soup.Session();
+        this._httpSession = new Soup.Session({
+            timeout: 15,
+            user_agent: 'PardusDailyWallpaper/1.0 (https://github.com/pardus/pardus-live-wallpaper)',
+            proxy_resolver: Gio.ProxyResolver.get_default()
+        });
     }
 
     /**
@@ -68,7 +72,7 @@ export class WallpaperManager {
                 GLib.get_user_data_dir(),
                 'gnome-shell',
                 'extensions',
-                'pardus-wallpaper-extension@pardus.org.tr',
+                'pardus-daily-wallpaper@pardus.org.tr',
                 'data',
                 'wallpaper_sources.json'
             ]);

@@ -1,0 +1,11 @@
+{
+  "name": "Pardus Daily Wallpaper",
+  "description": "Automatically download and set daily wallpapers from various sources",
+  "uuid": "pardus-daily-wallpaper@pardus.org.tr",
+  "shell-version": [
+    "48"
+  ],
+  "version": 1,
+  "url": "https://github.com/pardus/pardus-live-wallpaper",
+  "settings-schema": "org.gnome.shell.extensions.pardus-daily-wallpaper"
+}

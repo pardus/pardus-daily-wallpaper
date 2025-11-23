@@ -1,4 +1,4 @@
-# Pardus Live Wallpaper Extension
+# Pardus Daily Wallpaper Extension
 
 GNOME Shell extension for automatically downloading and shuffling wallpapers from various sources.
 
@@ -29,13 +29,13 @@ cd pardus-live-wallpaper
 
 ```bash
 # Copy extension to GNOME extensions directory
-cp -r pardus-wallpaper-extension@pardus.org.tr ~/.local/share/gnome-shell/extensions/
+cp -r pardus-daily-wallpaper@pardus.org.tr ~/.local/share/gnome-shell/extensions/
 
 # Compile schemas
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/pardus-wallpaper-extension@pardus.org.tr/schemas/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/pardus-daily-wallpaper@pardus.org.tr/schemas/
 
 # Enable extension
-gnome-extensions enable pardus-wallpaper-extension@pardus.org.tr
+gnome-extensions enable pardus-daily-wallpaper@pardus.org.tr
 
 # Restart GNOME Shell
 # X11: Alt+F2, type 'r', press Enter
@@ -47,13 +47,13 @@ gnome-extensions enable pardus-wallpaper-extension@pardus.org.tr
 ### Via Extension Preferences
 
 ```bash
-gnome-extensions prefs pardus-wallpaper-extension@pardus.org.tr
+gnome-extensions prefs pardus-daily-wallpaper@pardus.org.tr
 ```
 
 ### Via Panel Indicator
 
 Click the wallpaper icon in the top panel to:
-- Enable/disable live wallpapers
+- Enable/disable daily wallpapers
 - View wallpaper sources with status indicators
 - Set wallpapers immediately
 - View wallpaper information
@@ -62,7 +62,7 @@ Click the wallpaper icon in the top panel to:
 ## File Structure
 
 ```
-pardus-wallpaper-extension@pardus.org.tr/
+pardus-daily-wallpaper@pardus.org.tr/
 ├── extension.js           # Main extension module
 ├── indicator.js           # Panel indicator UI
 ├── worker.js             # Background worker (downloads, shuffle, cleanup)
@@ -75,15 +75,15 @@ pardus-wallpaper-extension@pardus.org.tr/
 ├── data/
 │   └── wallpaper_sources.json  # Wallpaper sources configuration
 └── schemas/
-    └── org.gnome.shell.extensions.pardus-wallpaper.gschema.xml
+    └── org.gnome.shell.extensions.pardus-daily-wallpaper.gschema.xml
 ```
 
 ## Cache Structure
 
-Wallpapers are cached in `~/.cache/pardus-gnome-greeter/` with the following structure:
+Wallpapers are cached in `~/.cache/pardus-daily-wallpaper/` with the following structure:
 
 ```
-~/.cache/pardus-gnome-greeter/
+~/.cache/pardus-daily-wallpaper/
 ├── 08.10.2025/
 │   ├── bing.json         # Standardized metadata
 │   ├── bing.jpeg         # Downloaded image
@@ -120,8 +120,8 @@ The extension supports multiple wallpaper sources configured in `data/wallpaper_
 journalctl -f -o cat /usr/bin/gnome-shell | grep -i pardus
 
 # Reload extension
-gnome-extensions disable pardus-wallpaper-extension@pardus.org.tr
-gnome-extensions enable pardus-wallpaper-extension@pardus.org.tr
+gnome-extensions disable pardus-daily-wallpaper@pardus.org.tr
+gnome-extensions enable pardus-daily-wallpaper@pardus.org.tr
 ```
 
 ## License

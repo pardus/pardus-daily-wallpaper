@@ -21,7 +21,7 @@ export const Indicator = GObject.registerClass({
     },
 }, class Indicator extends PanelMenu.Button {
     _init(settings) {
-        super._init(0.0, _('Pardus Wallpaper Extension'));
+        super._init(0.0, _('Pardus Daily Wallpaper'));
             this._settings = settings;
         this.path = Extension.lookupByURL(import.meta.url).path;
 
@@ -93,7 +93,7 @@ export const Indicator = GObject.registerClass({
     _createMyWallpapersView() {
         const box = new St.BoxLayout({ vertical: true, style_class: 'wallpapers-view' });
         const wallpapersDir = Gio.File.new_for_path(
-            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension'])
+            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper'])
         );
 
         if (!wallpapersDir.query_exists(null)) {
@@ -186,7 +186,7 @@ export const Indicator = GObject.registerClass({
     _isSourceCached(sourceId) {
         try {
             const today = GLib.DateTime.new_now_local().format('%d.%m.%Y');
-            const cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', today]);
+            const cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper', today]);
             const metadataFile = Gio.File.new_for_path(GLib.build_filenamev([cacheDir, `${sourceId}.json`]));
             return metadataFile.query_exists(null);
             } catch (e) {

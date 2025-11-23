@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.pardus-wallpaper" path="/org/gnome/shell/extensions/pardus-wallpaper/">
+  <schema id="org.gnome.shell.extensions.pardus-daily-wallpaper" path="/org/gnome/shell/extensions/pardus-daily-wallpaper/">
     
     <key name="selected-sources" type="as">
       <default>['bing', 'reddit', 'nasa', 'wikipedia']</default>

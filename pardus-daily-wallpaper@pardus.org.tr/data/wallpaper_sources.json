@@ -6,7 +6,7 @@
       "enabled": true,
       "api_url": "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY",
       "headers": {
-        "User-Agent": "PardusGnomeGreeter/1.0 (https://github.com/pardus/pardus-gnome-greeter) Python/requests"
+        "User-Agent": "PardusDailyWallpaper/1.0 (https://github.com/pardus/pardus-live-wallpaper)"
       },
       "rate_limit": {
         "requests_per_hour": 30,
@@ -43,7 +43,7 @@
       "enabled": true,
       "api_url": "https://en.wikipedia.org/api/rest_v1/feed/featured/{year}/{month:02d}/{day:02d}",
       "headers": {
-        "User-Agent": "PardusGnomeGreeter/1.0 (https://github.com/pardus/pardus-gnome-greeter) Python/requests"
+        "User-Agent": "PardusDailyWallpaper/1.0 (https://github.com/pardus/pardus-live-wallpaper)"
       },
       "response_mapping": {
         "data_path": "image",

@@ -129,7 +129,7 @@ export class BackgroundWorker {
             // Use the first selected source as the default wallpaper for the day
             const preferredSourceId = selectedSources[0];
             const today = this._getTodayString();
-            const todayDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', today]);
+            const todayDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper', today]);
             const dir = Gio.File.new_for_path(todayDir);
 
             if (!dir.query_exists(null)) {
@@ -160,7 +160,7 @@ export class BackgroundWorker {
     async setWallpaperForSource(sourceId) {
         try {
             const today = this._getTodayString();
-            const todayDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', today]);
+            const todayDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper', today]);
             const dir = Gio.File.new_for_path(todayDir);
             
             if (!dir.query_exists(null)) {
@@ -194,7 +194,7 @@ export class BackgroundWorker {
     }
 
     _getDailyCacheDir() {
-        return Gio.File.new_for_path(GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension', this._getTodayString()]));
+        return Gio.File.new_for_path(GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper', this._getTodayString()]));
     }
 
     _ensureCacheDir(dir) {

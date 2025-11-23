@@ -3,10 +3,10 @@
 
 set -e
 
-EXTENSION_UUID="pardus-wallpaper-extension@pardus.org.tr"
+EXTENSION_UUID="pardus-daily-wallpaper@pardus.org.tr"
 INSTALL_DIR="$HOME/.local/share/gnome-shell/extensions/$EXTENSION_UUID"
 
-echo "==> Uninstalling Pardus Wallpaper Extension..."
+echo "==> Uninstalling Pardus Daily Wallpaper Extension..."
 echo ""
 
 # Disable extension first

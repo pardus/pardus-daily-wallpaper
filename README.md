@@ -1,4 +1,4 @@
-# Pardus Live Wallpaper Extension
+# Pardus Daily Wallpaper Extension
 
 A GNOME Shell extension that automatically downloads and shuffles wallpapers from various sources.
 

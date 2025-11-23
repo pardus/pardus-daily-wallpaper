@@ -27,7 +27,7 @@ import { Indicator } from './indicator.js';
 
 export default class PardusWallpaperExtension extends Extension {
     enable() {
-        GLib.set_application_name('Pardus Live Wallpaper');
+        GLib.set_application_name('Pardus Daily Wallpaper');
         try {
             this._settingsManager = new SettingsManager(this);
             const settings = this._settingsManager.getSettings();

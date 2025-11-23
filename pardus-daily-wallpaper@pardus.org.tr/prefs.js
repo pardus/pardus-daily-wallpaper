@@ -1,6 +1,6 @@
 /* prefs.js
  *
- * Preferences window for the Pardus Live Wallpaper extension.
+ * Preferences window for the Pardus Daily Wallpaper extension.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -19,7 +19,7 @@ import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/
 import { WallpaperManager } from './wallpaperManager.js';
 
 
-const WALLPAPER_DIR = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension']);
+const WALLPAPER_DIR = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper']);
 
 
 const WallpaperInfoDialog = GObject.registerClass(
@@ -556,7 +556,7 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
         this._myWallpapersPage.add(group);
 
         const wallpapersDir = Gio.File.new_for_path(
-            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-wallpaper-extension'])
+            GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper'])
         );
 
         if (!wallpapersDir.query_exists(null)) {

@@ -3,12 +3,12 @@
 
 set -e
 
-EXTENSION_UUID="pardus-wallpaper-extension@pardus.org.tr"
+EXTENSION_UUID="pardus-daily-wallpaper@pardus.org.tr"
 EXTENSION_DIR="$EXTENSION_UUID"
 INSTALL_DIR="$HOME/.local/share/gnome-shell/extensions/$EXTENSION_UUID"
-DCONF_PATH="/org/gnome/shell/extensions/pardus-wallpaper/"
+DCONF_PATH="/org/gnome/shell/extensions/pardus-daily-wallpaper/"
 
-echo "==> Preparing to install Pardus Wallpaper Extension..."
+echo "==> Preparing to install Pardus Daily Wallpaper Extension..."
 
 # 0. Reset dconf settings to default
 echo "==> Resetting dconf settings to default..."
@@ -51,4 +51,4 @@ echo "==> Close the nested window (or press Ctrl+C here) to stop."
 echo "------------------------------------------------------------"
 
 # 4. Start a nested session to see the logs live
-dbus-run-session -- gnome-shell --nested
+# dbus-run-session -- gnome-shell --nested
