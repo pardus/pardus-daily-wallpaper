@@ -1,0 +1,154 @@
+# Turkish translation for pardus-daily-wallpaper.
+# Copyright (C) 2025
+# This file is distributed under the same license as the pardus-daily-wallpaper package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pardus-daily-wallpaper 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-24 01:46+0300\n"
+"PO-Revision-Date: 2025-11-23 12:00+0300\n"
+"Last-Translator: \n"
+"Language-Team: Turkish <tr@li.org>\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: pardus-daily-wallpaper@pardus.org.tr/extension.js:30
+#: pardus-daily-wallpaper@pardus.org.tr/indicator.js:162
+msgid "Pardus Daily Wallpaper"
+msgstr "Pardus Günlük Duvar Kağıdı"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:30
+msgid "Wallpaper Information"
+msgstr "Duvar Kağıdı Bilgisi"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:53
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:207
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:126
+msgid "Set as Wallpaper"
+msgstr "Duvar Kağıdı Yap"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:63
+msgid "Open Containing Folder"
+msgstr "İçeren Klasörü Aç"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:93
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:74
+#: pardus-daily-wallpaper@pardus.org.tr/wallpaperManager.js:202
+#: pardus-daily-wallpaper@pardus.org.tr/wallpaperManager.js:217
+msgid "Untitled"
+msgstr "Adsız"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:124
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:188
+msgid "Unknown Source"
+msgstr "Bilinmeyen Kaynak"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:206
+msgid "Information"
+msgstr "Bilgi"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:260
+msgid "Downloading Wallpapers..."
+msgstr "Duvar Kağıtları İndiriliyor..."
+
+#. Overall progress
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:281
+msgid "Overall Progress"
+msgstr "Genel İlerleme"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:388
+msgid "Too many requests. Please try again later."
+msgstr "Çok fazla istek. Lütfen daha sonra tekrar deneyin."
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:415
+msgid "Sources"
+msgstr "Kaynaklar"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:420
+msgid "Wallpaper Sources"
+msgstr "Duvar Kağıdı Kaynakları"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:421
+msgid "Select which sources to download from"
+msgstr "İndirilecek kaynakları seçin"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:457
+msgid "My Wallpapers"
+msgstr "Duvar Kağıtlarım"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:473
+msgid "No wallpapers downloaded yet."
+msgstr "Henüz duvar kağıdı indirilmedi."
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:483
+msgid "No wallpapers found in cache."
+msgstr "Önbellekte duvar kağıdı bulunamadı."
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:504
+msgid "Today"
+msgstr "Bugün"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:524
+#, javascript-format
+msgid "Retry Missing Downloads (%d)"
+msgstr "Eksik İndirmeleri Tekrar Dene (%d)"
+
+#: pardus-daily-wallpaper@pardus.org.tr/prefs.js:549
+msgid "Error reading cache"
+msgstr "Önbellek okuma hatası"
+
+#: pardus-daily-wallpaper@pardus.org.tr/indicator.js:197
+msgid "No sources selected"
+msgstr "Kaynak seçilmedi"
+
+#: pardus-daily-wallpaper@pardus.org.tr/indicator.js:248
+msgid "Settings"
+msgstr "Ayarlar"
+
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:100
+msgid "Unknown"
+msgstr "Bilinmeyen"
+
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:132
+msgid "Open Folder"
+msgstr "Klasörü Aç"
+
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:137
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:152
+msgid "Close"
+msgstr "Kapat"
+
+#: pardus-daily-wallpaper@pardus.org.tr/infoDialog.js:145
+msgid "No information available"
+msgstr "Bilgi mevcut değil"
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:120
+msgid "Daily Wallpaper Updated"
+msgstr "Günlük Duvar Kağıdı Güncellendi"
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:121
+#, javascript-format
+msgid "New wallpaper applied from %s"
+msgstr "%s kaynağından yeni duvar kağıdı uygulandı"
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:281
+msgid "Download Successful"
+msgstr "İndirme Başarılı"
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:282
+#, javascript-format
+msgid "Successfully downloaded wallpaper from %s."
+msgstr "%s kaynağından duvar kağıdı başarıyla indirildi."
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:292
+msgid "Retry Failed"
+msgstr "Yeniden Deneme Başarısız"
+
+#: pardus-daily-wallpaper@pardus.org.tr/worker.js:293
+#, javascript-format
+msgid "Failed to download from %s. Please check your connection."
+msgstr "%s kaynağından indirme başarısız. Lütfen bağlantınızı kontrol edin."

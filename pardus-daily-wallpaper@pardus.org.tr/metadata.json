@@ -6,6 +6,7 @@
     "48"
   ],
   "version": 1,
-  "url": "https://github.com/pardus/pardus-live-wallpaper",
+  "url": "https://github.com/pardus/pardus-daily-wallpaper",
+  "gettext-domain": "pardus-daily-wallpaper",
   "settings-schema": "org.gnome.shell.extensions.pardus-daily-wallpaper"
 }

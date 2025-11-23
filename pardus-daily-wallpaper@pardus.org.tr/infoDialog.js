@@ -71,7 +71,7 @@ export const WallpaperInfoDialog = GObject.registerClass(
 
             // Title
             const titleLabel = new St.Label({
-                text: metadata.title || 'Untitled',
+                text: metadata.title || _('Untitled'),
                 style_class: 'wallpaper-title',
             });
             metadataBox.add_child(titleLabel);
@@ -97,7 +97,7 @@ export const WallpaperInfoDialog = GObject.registerClass(
             // Source
             const sourceBox = new St.BoxLayout({ style_class: 'wallpaper-detail-item' });
             sourceBox.add_child(new St.Icon({ icon_name: 'avatar-default-symbolic', style_class: 'wallpaper-detail-icon' }));
-            sourceBox.add_child(new St.Label({ text: metadata.source || 'Unknown', style_class: 'wallpaper-detail-text' }));
+            sourceBox.add_child(new St.Label({ text: metadata.source || _('Unknown'), style_class: 'wallpaper-detail-text' }));
             detailsBox.add_child(sourceBox);
 
             // Date
@@ -142,14 +142,14 @@ export const WallpaperInfoDialog = GObject.registerClass(
 
         _showNoDataMessage() {
             const messageLabel = new St.Label({
-                text: 'No information available',
+                text: _('No information available'),
                 style_class: 'wallpaper-no-data',
             });
 
             this.contentLayout.add_child(messageLabel);
 
             this.addButton({
-                label: 'Close',
+                label: _('Close'),
                 action: () => this.close(),
                 key: Clutter.KEY_Escape,
             });

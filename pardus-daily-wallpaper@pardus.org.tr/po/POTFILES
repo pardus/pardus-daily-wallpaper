@@ -1,0 +1,7 @@
+extension.js
+prefs.js
+indicator.js
+infoDialog.js
+worker.js
+wallpaperManager.js
+schemas/org.gnome.shell.extensions.pardus-daily-wallpaper.gschema.xml

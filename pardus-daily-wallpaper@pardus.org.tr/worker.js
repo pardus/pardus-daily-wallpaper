@@ -8,6 +8,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 export class BackgroundWorker {
     constructor(settings, wallpaperManager, indicator) {
@@ -116,8 +117,8 @@ export class BackgroundWorker {
                 const sourceName = config[appliedSourceId]?.name || appliedSourceId;
                 
                 this._showNotification(
-                    'Daily Wallpaper Updated',
-                    `New wallpaper applied from ${sourceName}`
+                    _('Daily Wallpaper Updated'),
+                    _('New wallpaper applied from %s').format(sourceName)
                 );
             }
             console.log('Download process completed.');
@@ -277,8 +278,8 @@ export class BackgroundWorker {
             }
             
             this._showNotification(
-                'Download Successful',
-                `Successfully downloaded wallpaper from ${sourceId}.`
+                _('Download Successful'),
+                _('Successfully downloaded wallpaper from %s.').format(sourceId)
             );
         } catch (e) {
             console.error(`Retry failed for ${sourceId}:`, e);
@@ -288,8 +289,8 @@ export class BackgroundWorker {
             }
             
             this._showNotification(
-                'Retry Failed',
-                `Failed to download from ${sourceId}. Please check your connection.`
+                _('Retry Failed'),
+                _('Failed to download from %s. Please check your connection.').format(sourceId)
             );
         }
     }

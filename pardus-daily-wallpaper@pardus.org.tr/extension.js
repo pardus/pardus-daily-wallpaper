@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 
@@ -27,7 +27,7 @@ import { Indicator } from './indicator.js';
 
 export default class PardusWallpaperExtension extends Extension {
     enable() {
-        GLib.set_application_name('Pardus Daily Wallpaper');
+        GLib.set_application_name(_('Pardus Daily Wallpaper'));
         try {
             this._settingsManager = new SettingsManager(this);
             const settings = this._settingsManager.getSettings();

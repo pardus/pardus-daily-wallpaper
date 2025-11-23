@@ -90,7 +90,7 @@ class WallpaperInfoDialog extends Adw.Window {
         mainBox.append(infoBox);
 
         const titleLabel = new Gtk.Label({
-            label: `<b>${this._metadata.title || 'Untitled'}</b>`,
+            label: `<b>${this._metadata.title || _('Untitled')}</b>`,
             use_markup: true,
             xalign: 0,
             css_classes: ['title-1'],
@@ -121,7 +121,7 @@ class WallpaperInfoDialog extends Adw.Window {
             spacing: 6,
         });
         sourceBox.append(new Gtk.Image({ icon_name: 'avatar-default-symbolic', pixel_size: 16 }));
-        sourceBox.append(new Gtk.Label({ label: this._metadata.source || 'Unknown Source' }));
+        sourceBox.append(new Gtk.Label({ label: this._metadata.source || _('Unknown Source') }));
         detailsBox.append(sourceBox);
         
         const dateBox = new Gtk.Box({
@@ -185,7 +185,7 @@ class WallpaperRow extends Adw.ActionRow {
         this._prefs = prefs;
         this._metadata = this._loadMetadata();
 
-        const sourceName = this._metadata?.source || 'Unknown Source';
+        const sourceName = this._metadata?.source || _('Unknown Source');
         const title = this._metadata?.title || this._wallpaperFile.get_basename();
 
         super._init({
@@ -412,13 +412,13 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
     
     _createSourcesPage(settings, window) {
         const page = new Adw.PreferencesPage({
-            title: 'Sources',
+            title: _('Sources'),
             icon_name: 'folder-download-symbolic',
         });
         
         const sourcesGroup = new Adw.PreferencesGroup({
-            title: 'Wallpaper Sources',
-            description: 'Select which sources to download from',
+            title: _('Wallpaper Sources'),
+            description: _('Select which sources to download from'),
         });
         
         const sources = this._loadWallpaperSources();

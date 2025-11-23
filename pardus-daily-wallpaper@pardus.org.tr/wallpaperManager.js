@@ -9,6 +9,8 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup?version=3.0';
 
+const _ = (text) => GLib.dgettext('pardus-daily-wallpaper', text);
+
 // Promisify Gio file operations to use async/await
 // Note: Explicit promisification is safest across GJS versions when signatures vary.
 // Gio._promisify(Gio.File.prototype, 'replace_contents_async', 'replace_contents_finish');
@@ -197,7 +199,7 @@ export class WallpaperManager {
             const metadata = {
                 source: config.name || sourceId,
                 sourceId: sourceId,
-                title: this._extractField(apiResponse, config.response_mapping?.title_keys) || 'Untitled',
+                title: this._extractField(apiResponse, config.response_mapping?.title_keys) || _('Untitled'),
                 description: this._extractField(apiResponse, config.response_mapping?.description_keys) || '',
                 date: new Date().toISOString().split('T')[0],
                 copyright: this._extractField(apiResponse, config.response_mapping?.copyright_keys) || '',
@@ -212,7 +214,7 @@ export class WallpaperManager {
             return {
                 source: sourceId,
                 sourceId: sourceId,
-                title: 'Untitled',
+                title: _('Untitled'),
                 description: '',
                 date: new Date().toISOString().split('T')[0],
                 copyright: '',
