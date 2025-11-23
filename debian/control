@@ -1,0 +1,22 @@
+Source: pardus-daily-wallpaper
+Section: gnome
+Priority: optional
+Maintainer: Osman Coşkun <osman.coskun@pardus.org.tr>
+Build-Depends: debhelper-compat (= 13), meson, gettext
+Standards-Version: 4.6.2
+Homepage: https://github.com/pardus/pardus-daily-wallpaper
+
+Package: gnome-shell-extension-pardus-daily-wallpaper
+Architecture: all
+Depends: ${misc:Depends},
+         gnome-shell (>= 45~),
+         gir1.2-soup-3.0,
+         gir1.2-gtk-4.0,
+         gir1.2-adw-1
+Description: Automatically download and set daily wallpapers for Pardus
+ This GNOME Shell extension automatically downloads and sets daily wallpapers
+ from various sources like Bing, NASA, National Geographic, and more.
+ .
+ It allows you to select preferred sources and maintains a local history of
+ downloaded wallpapers.
+
