@@ -253,7 +253,7 @@ const DownloadProgressDialog = GObject.registerClass({
     },
 },
 class DownloadProgressDialog extends Adw.Window {
-    _init(missingSources, parent) {
+    _init(missingSources, extensionPath, parent) {
         super._init({
             transient_for: parent,
             modal: true,
@@ -261,7 +261,7 @@ class DownloadProgressDialog extends Adw.Window {
         });
 
         this._missingSources = missingSources;
-        this._wallpaperManager = new WallpaperManager(null); // Settings not needed for download
+        this._wallpaperManager = new WallpaperManager(null, extensionPath); // Settings not needed for download
         this._progressRows = {};
         this._completed = 0;
         this._total = missingSources.length;
@@ -553,7 +553,7 @@ export default class PardusWallpaperPreferences extends ExtensionPreferences {
     }
     
     _showDownloadProgressDialog(missingSources) {
-        const dialog = new DownloadProgressDialog(missingSources, this._window);
+        const dialog = new DownloadProgressDialog(missingSources, this.path, this._window);
         dialog.connect('downloads-finished', () => this._refreshMyWallpapersPage());
         dialog.present();
     }

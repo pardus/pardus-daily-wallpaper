@@ -18,8 +18,9 @@ Gio._promisify(Soup.Session.prototype, 'send_and_read_async', 'send_and_read_fin
 
 
 export class WallpaperManager {
-    constructor(settings) {
+    constructor(settings, extensionPath) {
         this._settings = settings;
+        this._extensionPath = extensionPath;
         this._cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'pardus-daily-wallpaper']);
         this._sourcesConfig = null;
         this._httpSession = new Soup.Session({
@@ -69,10 +70,7 @@ export class WallpaperManager {
         try {
             // Try to load from extension data directory
             const configPath = GLib.build_filenamev([
-                GLib.get_user_data_dir(),
-                'gnome-shell',
-                'extensions',
-                'pardus-daily-wallpaper@pardus.org.tr',
+                this._extensionPath,
                 'data',
                 'wallpaper_sources.json'
             ]);

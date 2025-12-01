@@ -32,7 +32,7 @@ export default class PardusWallpaperExtension extends Extension {
             this._settingsManager = new SettingsManager(this);
             const settings = this._settingsManager.getSettings();
 
-            this._wallpaperManager = new WallpaperManager(this._settingsManager);
+            this._wallpaperManager = new WallpaperManager(this._settingsManager, this.path);
             
             this._indicator = new Indicator(settings, this._wallpaperManager);
             Main.panel.addToStatusArea(this.uuid, this._indicator);
