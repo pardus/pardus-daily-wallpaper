@@ -71,6 +71,44 @@
         ],
         "image_check": "image.image.source"
       }
+    },
+    "bing": {
+      "name": "Bing Daily",
+      "description": "Microsoft Bing Picture of the Day",
+      "enabled": true,
+      "api_url": "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1",
+      "headers": {
+        "User-Agent": "PardusDailyWallpaper/1.0 (https://github.com/pardus/pardus-live-wallpaper)"
+      },
+      "rate_limit": {
+        "requests_per_hour": 60,
+        "retry_delay": 60
+      },
+      "response_mapping": {
+        "data_path": "images.0",
+        "title_keys": [
+          "copyright",
+          "title"
+        ],
+        "description_keys": [
+          "copyright"
+        ],
+        "copyright_keys": [
+          "copyright"
+        ],
+        "image_url_keys": [
+          "url"
+        ],
+        "thumbnail_url_keys": [
+          "url"
+        ],
+        "image_url_prefix": "https://www.bing.com"
+      },
+      "validation": {
+        "required_fields": [
+          "url"
+        ]
+      }
     }
   }
 }
